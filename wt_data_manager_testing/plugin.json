@@ -1,0 +1,6 @@
+{
+    "name": "WholeTale Data Manager Testing Plugin",
+    "description": "Contains a simple interface to test the DM",
+    "version": "0.0.1",
+    "dependencies": ["wt_data_manager"]
+}

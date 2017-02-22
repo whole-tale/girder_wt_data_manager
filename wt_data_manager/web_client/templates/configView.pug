@@ -1,0 +1,15 @@
+.g-config-breadcrumb-container
+
+.panel-group#g-wt-dm-options
+  .panel.panel-default
+    .panel-heading
+      .panel-title WholeTale Data Manager Configuration
+      .panel-body
+        form.g-wt-dm-config-form(role="form",
+            id=`g-wt-dm-config-form`)
+          .form-group
+            label.control-label(for=`g-wt-dm-private-storage-path`) Private Storage Path
+            input.input-sm.form-control(id=`g-wt-dm-private-storage-path`,
+                type="text", placeholder="Private Storage Path")
+          p.g-validation-failed-message(id=`g-wt-dm-config-error-message`)
+          input.btn.btn-sm.btn-primary(type="submit", value="Save")

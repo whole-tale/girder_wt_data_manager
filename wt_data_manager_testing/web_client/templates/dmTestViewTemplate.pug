@@ -1,0 +1,32 @@
+.g-frontpage-header
+  .g-frontpage-title-container
+    .g-frontpage-title Data Manager Test Tools
+
+.g-frontpage-body
+  p.g-frontpage-paragraph
+    textarea.g-dm-tv-dataset "[{'itemId': '58acccc7cbb11e4425ce147b', 'mountPath': '/one'}, {'itemId': '58acccc7cbb11e4425ce148b', 'mountPath': '/fa.txt'}]"
+  p.g-frontpage-paragraph
+    a.g-dm-tv-start-container-button.btn.btn-sm.btn-success(
+    href=`#dm/testing/createContainer`,
+    title="Creates a Test Docker Container") Create Test Container
+
+    table.g-container-list
+      tr
+        th ID
+        th Status
+        th Actions
+      each container in containers
+        tr
+          td= container.id
+          td= container.get("status")
+          td
+            a.g-dm-tv-start-container-button.btn.btn-sm.btn-success(
+              href=`#dm/testing/container/${container.get('_id')}/start`,
+              title="Start a Test Docker Container") Start
+            a.g-dm-tv-stop-container-button.btn.btn-sm.btn-success(
+              href=`#dm/testing/container/${container.get('_id')}/stop`,
+              title="Stop a Test Docker Container") Stop
+            a.g-dm-tv-remove-container-button.btn.btn-sm.btn-success(
+              href=`#dm/testing/container/${container.get('_id')}/remove`,
+              title="Remove a Test Docker Container") Remove
+
