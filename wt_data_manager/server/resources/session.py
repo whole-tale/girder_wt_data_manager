@@ -67,6 +67,9 @@ class Session(Resource):
     @describeRoute(
         Description('Get an object in a session using a path.')
             .param('id', 'The ID of the session.', paramType='path')
+            .param('path', 'The path of the object, starting from the mount point.', paramType='query')
+            .param('children', 'Whether to also return a listing of all the children '
+                'of the object at the specified path', paramType='query')
             .errorResponse('ID was invalid.')
             .errorResponse('Read access was denied for the session.', 403)
             .errorResponse('Object was not found.', 401)
