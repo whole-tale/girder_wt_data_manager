@@ -111,11 +111,14 @@ class Session(AccessControlledModel):
     def getObject(self, user, session, path, children):
         self.checkOwnership(user, session)
 
-        pathEls = self.splitPath(path)
+        (tail, rootContainer) = self.findRootContainer(session, path)
+        crtObj = rootContainer
 
-        crtObj = session
-        for item in pathEls:
-            crtObj = self.findObject(crtObj, item)
+        if tail != None:
+            pathEls = self.splitPath(tail)
+            for item in pathEls:
+                crtObj = self.findObjectInFolder(crtObj, item)
+
         if children:
             return {
                 'object': crtObj,
@@ -126,19 +129,19 @@ class Session(AccessControlledModel):
                 'object': crtObj
             }
 
-    def findObject(self, container, name):
-        if 'dataSet' in container:
-            return self.findObjectInSession(container, name)
-        else:
-            return self.findObjectInFolder(container, name)
-
-    def findObjectInSession(self, session, name):
-        sname = "/" + name
-
+    def findRootContainer(self, session, path):
         for obj in session['dataSet']:
-            if obj['mountPath'] == sname:
-                return self.loadObject(str(obj['itemId']))
-        raise LookupError("No such object: " + name)
+            rootPath = obj['mountPath']
+            if path == rootPath:
+                return (None, self.loadObject(str(obj['itemId'])))
+            if rootPath[-1] != '/':
+                # add a slash at the end to avoid situations like
+                # rootPath=/name being matched for path=/nameAndStuff/...
+                rootPath = rootPath + '/'
+            if path.startswith(rootPath):
+                return (path[len(rootPath):], self.loadObject(str(obj['itemId'])))
+        raise LookupError('No such object: ' + path)
+
 
     def loadObject(self, id):
         item = self.folderModel.load(id, level=AccessType.READ)
