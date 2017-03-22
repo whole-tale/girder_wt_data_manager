@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from bson import json_util
 
-from girder import events
 from girder.api.rest import Resource, RestException
 from girder.api.rest import filtermodel, loadmodel
 from girder.constants import AccessType
 from girder.api import access
 from girder.api.describe import Description, describeRoute
+import json
 
 class Session(Resource):
     def initialize(self):
@@ -49,18 +48,18 @@ class Session(Resource):
     )
     def removeSession(self, session, params):
         user = self.getCurrentUser()
-        return self.model('session', 'wt_data_manager').remove(user, session)
+        return self.model('session', 'wt_data_manager').deleteSession(user, session)
 
     @access.user
     @describeRoute(
         Description('Creates a session.').
             param('dataSet', 'An optional data set to initialize the session with. '
                              'A data set is a list of objects of the form '
-                             '{"itemId": string, "mountPath": string, "externalUrl": string}.')
+                             '{"itemId": string, "mountPath": string}.', paramType='query')
     )
     def createSession(self, params):
         user = self.getCurrentUser()
-        dataSet = params.get('dataSet', None)
+        dataSet = json.loads(params.get('dataSet', '[]'))
         return self.model('session', 'wt_data_manager').createSession(user, dataSet)
 
     @access.user
