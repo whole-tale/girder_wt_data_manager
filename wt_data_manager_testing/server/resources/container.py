@@ -94,10 +94,10 @@ class Container(Resource):
     )
     def createContainer(self, params):
         user = self.getCurrentUser()
-        sDataSet = params.get('dataSet', '{}')
+        sDataSet = params.get('dataSet', '[]')
         print("Data set param: " + str(sDataSet))
         dataSet = json.loads(sDataSet)
-        return self.model('container', 'wt_data_manager_testing').createContainer(user, dataSet['value'])
+        return self.model('container', 'wt_data_manager_testing').createContainer(user, dataSet)
 
     def stripQuotes(self, str):
         if (str[0] == '\'' and str[-1] == '\'') or (str[0] == '"' and str[-1] == '"'):

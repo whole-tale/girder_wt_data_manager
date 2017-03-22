@@ -45,7 +45,7 @@ addRestRoute('dm/testing/createContainer', 'dmTestingCreateContainer', 'POST', '
         return 'dm/testing/container'
     },
     function() {
-        return {"dataSet": '{"value": ' + $('.g-dm-tv-dataset').val().trim() + '}'};
+        return {"dataSet": $('.g-dm-tv-dataset').val().trim()};
     }
 );
 
