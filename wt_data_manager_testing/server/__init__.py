@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from resources import container, testing
+from models import container as cm
 
 def load(info):
 
@@ -19,3 +20,5 @@ def load(info):
 
     info['apiRoot'].dm.route('POST', ('testing', 'createItems'), testing.createTestItems)
     info['apiRoot'].dm.route('GET', ('testing', 'createItems'), testing.createTestItems)
+
+    info['apiRoot'].dm.route('GET', ('testing', 'deleteSessions',), testing.deleteSessions)

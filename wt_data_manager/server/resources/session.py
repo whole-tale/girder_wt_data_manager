@@ -4,7 +4,7 @@
 from bson import json_util
 
 from girder import events
-from girder.api.rest import Resource
+from girder.api.rest import Resource, RestException
 from girder.api.rest import filtermodel, loadmodel
 from girder.constants import AccessType
 from girder.api import access
@@ -13,7 +13,7 @@ from girder.api.describe import Description, describeRoute
 class Session(Resource):
     def initialize(self):
         self.name = 'session'
-        self.exposeFields(level = AccessType.READ, fields = {'_id', 'files', 'ownerId'})
+        self.exposeFields(level = AccessType.READ, fields = {'_id', 'dataSet', 'ownerId'})
 
     def validate(self, session):
         return session
@@ -53,11 +53,31 @@ class Session(Resource):
 
     @access.user
     @describeRoute(
-        Description('Starts a container.').
+        Description('Creates a session.').
             param('dataSet', 'An optional data set to initialize the session with. '
                              'A data set is a list of objects of the form '
                              '{"itemId": string, "mountPath": string, "externalUrl": string}.')
     )
     def createSession(self, params):
         user = self.getCurrentUser()
-        return self.model('session', 'wt_data_manager').createSession(user, params.get('dataSet', None))
+        dataSet = params.get('dataSet', None)
+        return self.model('session', 'wt_data_manager').createSession(user, dataSet)
+
+    @access.user
+    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
+    @describeRoute(
+        Description('Get an object in a session using a path.')
+            .param('id', 'The ID of the session.', paramType='path')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Read access was denied for the session.', 403)
+            .errorResponse('Object was not found.', 401)
+    )
+    def getObject(self, session, params):
+        user = self.getCurrentUser()
+        children = False
+        if 'children' in params:
+            children = True
+        try:
+            return self.model('session', 'wt_data_manager').getObject(user, session, params['path'], children)
+        except LookupError as ex:
+            raise RestException(ex.message, code = 401)

@@ -3,12 +3,28 @@
     .g-frontpage-title Data Manager Test Tools
 
 .g-frontpage-body
+  .g-transfers-sidebar
+    h3 Transfers
+
+    table.g-transfer-list
+      each transfer in transfers
+        tr
+          td
+            .g-transfer-path= transfer.get('path')
+            .g-transfer-status= transfer.get('stringStatus')
+            .g-transfer-progress-container
+              .g-transfer-progress-text= transfer.get('progress') + '%'
+              .g-transfer-progress-bar(style = {width: transfer.get('progress') + '%'})
   p.g-frontpage-paragraph
-    textarea.g-dm-tv-dataset "[{'itemId': '58acccc7cbb11e4425ce147b', 'mountPath': '/one'}, {'itemId': '58acccc7cbb11e4425ce148b', 'mountPath': '/fa.txt'}]"
+    textarea.g-dm-tv-dataset [{"itemId": "58b08d98cbb11e6d0f95df90", "mountPath": "/one"}, {"itemId": "58b08d98cbb11e6d0f95df9f", "mountPath": "/fa.txt"}, {"itemId": "58d2c409cbb11e0c17c7cc78", "mountPath": "/c"}]
   p.g-frontpage-paragraph
     a.g-dm-tv-start-container-button.btn.btn-sm.btn-success(
     href=`#dm/testing/createContainer`,
-    title="Creates a Test Docker Container") Create Test Container
+    title='Creates a Test Docker Container') Create Test Container
+
+    a.g-dm-tv-delete-sessions-button.btn.btn-sm.btn-success(
+    href=`#dm/testing/deleteSessions`,
+    title='Deletes all sessions') Delete Sessions
 
     table.g-container-list
       tr
@@ -18,15 +34,14 @@
       each container in containers
         tr
           td= container.id
-          td= container.get("status")
+          td= container.get('status')
           td
             a.g-dm-tv-start-container-button.btn.btn-sm.btn-success(
               href=`#dm/testing/container/${container.get('_id')}/start`,
-              title="Start a Test Docker Container") Start
+              title='Start a Test Container') Start
             a.g-dm-tv-stop-container-button.btn.btn-sm.btn-success(
               href=`#dm/testing/container/${container.get('_id')}/stop`,
-              title="Stop a Test Docker Container") Stop
+              title='Stop a Test Container') Stop
             a.g-dm-tv-remove-container-button.btn.btn-sm.btn-success(
               href=`#dm/testing/container/${container.get('_id')}/remove`,
-              title="Remove a Test Docker Container") Remove
-
+              title='Remove a Test Container') Remove

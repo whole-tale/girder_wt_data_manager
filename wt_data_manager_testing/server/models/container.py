@@ -8,8 +8,12 @@ from girder import events
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel, AccessException
 from girder.plugins.wt_data_manager.models.session import Session
-from girder.plugins.wt_data_manager.lib.data_set import DMDataSet
 from girder import logger
+from ..lib import efs
+from girder.api import rest
+from girder.models.setting import Setting
+from girder.plugins.wt_data_manager.constants import PluginSettings
+from girder.plugins.wt_data_manager.lib.girder_utils import GirderUtils
 
 class Container(AccessControlledModel):
     def initialize(self):
@@ -30,7 +34,7 @@ class Container(AccessControlledModel):
         :param sort: The sort field.
         """
         userId = user['_id'] if user else None
-        cursor = self.find({'userId': userId}, sort = sort)
+        cursor = self.find({'ownerId': userId}, sort = sort)
 
         for r in self.filterResultsByPermission(cursor = cursor, user = user,
             level = AccessType.READ, limit = limit, offset = offset):
@@ -45,7 +49,7 @@ class Container(AccessControlledModel):
         """
 
         dmSession = Session()
-        session = dmSession.createSession(user, DMDataSet(dataSet))
+        session = dmSession.createSession(user, dataSet)
 
         container = {
             '_id': objectid.ObjectId(),
@@ -71,7 +75,7 @@ class Container(AccessControlledModel):
         :param container: The container to start.
         """
 
-        if container['userId'] != user['_id']:
+        if container['ownerId'] != user['_id']:
             raise AccessException("This container is not yours")
         container['status'] = "Starting"
         self.save(container)
@@ -88,7 +92,7 @@ class Container(AccessControlledModel):
         :param container: The container to stop.
         """
 
-        if container['userId'] != user['_id']:
+        if container['ownerId'] != user['_id']:
             raise AccessException("This container is not yours")
         container['status'] = 'Stopping'
         self.save(container)
@@ -98,7 +102,7 @@ class Container(AccessControlledModel):
         return container
 
     def removeContainer(self, user, container):
-        if container['userId'] != user['_id']:
+        if container['ownerId'] != user['_id']:
             raise AccessException("This container is not yours")
 
         try:
@@ -111,9 +115,20 @@ class Container(AccessControlledModel):
 
 
     def _startContainer(self, container):
+        settings = Setting()
+        psRoot = settings.get(PluginSettings.PRIVATE_STORAGE_PATH)
+        restUrl = rest.getApiUrl()
+        token = rest.getCurrentToken()['_id']
+        sessionId = str(container['sessionId'])
+        mountId = efs.mount(sessionId, '/tmp/' + sessionId, psRoot, restUrl, token)
+        container['mountId'] = mountId
         container['status'] = 'Running'
         self.save(container)
 
     def _stop_container(self, container):
+        mountId = container['mountId']
+        if mountId:
+            efs.unmount(mountId)
+            container['mountId'] = None
         container['status'] = 'Stopped'
         self.save(container)

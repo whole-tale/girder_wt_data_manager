@@ -4,6 +4,7 @@
 from bson import json_util
 
 from girder import events
+import json
 from girder.api.rest import Resource
 from girder.api.rest import filtermodel, loadmodel
 from girder.constants import AccessType
@@ -93,4 +94,11 @@ class Container(Resource):
     )
     def createContainer(self, params):
         user = self.getCurrentUser()
-        return self.model('container', 'wt_data_manager_testing').createContainer(user, params.get('dataSet', None))
+        sDataSet = params.get('dataSet', '{}')
+        print("Data set param: " + str(sDataSet))
+        dataSet = json.loads(sDataSet)
+        return self.model('container', 'wt_data_manager_testing').createContainer(user, dataSet['value'])
+
+    def stripQuotes(self, str):
+        if (str[0] == '\'' and str[-1] == '\'') or (str[0] == '"' and str[-1] == '"'):
+            return str[1:-1]
