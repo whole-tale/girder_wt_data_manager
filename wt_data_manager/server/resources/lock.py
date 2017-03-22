@@ -83,7 +83,7 @@ class Lock(Resource):
         Description('Acquires a lock on an item.')
             .param('sessionId', 'A Data Manager session.', paramType='query')
             .param('itemId', 'The item to lock', paramType='query')
-            .param('ownerId', 'The lock owner.', paramType='query')
+            .param('ownerId', 'The lock owner.', paramType='query', required=False)
     )
     def acquireLock(self, params):
         user = self.getCurrentUser()
