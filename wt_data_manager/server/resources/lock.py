@@ -22,9 +22,9 @@ class Lock(Resource):
     @filtermodel(model='lock', plugin='wt_data_manager')
     @describeRoute(
         Description('List locks for a given user.')
-            .param('sessionId', 'Restrict results to a single session', paramType='query')
-            .param('itemId', 'Only return locks on a given item', paramType='query')
-            .param('ownerId', 'Only return locks with a specific lock owner', paramType='query')
+            .param('sessionId', 'Restrict results to a single session', paramType='query', required=False)
+            .param('itemId', 'Only return locks on a given item', paramType='query', required=False)
+            .param('ownerId', 'Only return locks with a specific lock owner', paramType='query', required=False)
     )
     def listLocks(self, params):
         user = self.getCurrentUser()
@@ -45,7 +45,7 @@ class Lock(Resource):
     @filtermodel(model='lock', plugin='wt_data_manager')
     @describeRoute(
         Description('List locks for a given user.')
-            .param('sessionId', 'Restrict results to a single session')
+            .param('sessionId', 'Restrict results to a single session', paramType='path')
     )
     def listLocksForSession(self, session, params):
         user = self.getCurrentUser()
@@ -68,9 +68,9 @@ class Lock(Resource):
     @describeRoute(
         Description('Removes an existing lock.')
             .param('id', 'The ID of the lock.', paramType='path')
-            .param('sessionId', 'The session that the lock was acquired in.', paramType='query')
-            .param('itemId', 'The item to remove the lock from', paramType='query')
-            .param('ownerId', 'The lock owner.', paramType='query')
+            .param('sessionId', 'The session that the lock was acquired in.', paramType='query', required=False)
+            .param('itemId', 'The item to remove the lock from', paramType='query', required=False)
+            .param('ownerId', 'The lock owner.', paramType='query', required=False)
             .errorResponse('ID was invalid.')
             .errorResponse('Access was denied for the lock.', 403)
     )
