@@ -29,6 +29,15 @@ class Lock(AccessControlledModel):
     def validate(self, lock):
         return lock
 
+    def listLocks(self, user, sessionId = None, itemId = None, ownerId = None):
+        query = {'userId': user['_id']}
+        if sessionId != None:
+            query['sessionId'] = sessionId
+        if itemId != None:
+            query['itemId'] = itemId
+        if ownerId != None:
+            query['ownerId'] = ownerId
+        return self.find(query)
 
     def acquireLock(self, user, sessionId, itemId, ownerId = None):
         """
