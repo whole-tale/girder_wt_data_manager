@@ -23,10 +23,22 @@ class Transfer(Resource):
     @filtermodel(model='transfer', plugin='wt_data_manager')
     @describeRoute(
         Description('List transfers for a given user.')
+            .param('sessionId', 'If specified, only return transfers belonging to '
+                'a certain session.', paramType='path', required=False)
+            .param('discardOld', 'By default, transfers that finished more than 1 '
+                'minute before this call is made are not returned. Set this to '
+                '"false" to return all transfers.', paramType='path', required=False)
     )
     def listTransfers(self, params):
         user = self.getCurrentUser()
-        return list(self.model('transfer', 'wt_data_manager').list(user = user))
+        sessionId = None
+        if 'sessionId' in params:
+            sessionId = params['sessionId']
+        discardOld = True
+        if 'discardOld' in params:
+            discardOld = params['discardOld'] != 'false'
+        return list(self.model('transfer', 'wt_data_manager').list(user = user,
+            sessionId = sessionId, discardOld = discardOld))
 
     @access.user
     @loadmodel(model='session', plugin='wt_data_manager')
