@@ -68,9 +68,9 @@ class Lock(Resource):
     @describeRoute(
         Description('Removes an existing lock.')
             .param('id', 'The ID of the lock.', paramType='path')
-            .param('sessionId', 'The session that the lock was acquired in.', paramType='query', required=False)
-            .param('itemId', 'The item to remove the lock from', paramType='query', required=False)
-            .param('ownerId', 'The lock owner.', paramType='query', required=False)
+            #.param('sessionId', 'The session that the lock was acquired in.', paramType='query', required=False)
+            #.param('itemId', 'The item to remove the lock from', paramType='query', required=False)
+            #.param('ownerId', 'The lock owner.', paramType='query', required=False)
             .errorResponse('ID was invalid.')
             .errorResponse('Access was denied for the lock.', 403)
     )
