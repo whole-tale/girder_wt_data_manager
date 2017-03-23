@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from resources import container, testing
-from models import container as cm
+from .resources import container, testing
+from .models import container as cm
 
 def load(info):
 

@@ -8,7 +8,10 @@ import sys
 import errno
 import threading
 import ctypes
-import httplib
+try:
+    import httplib
+except ImportError:
+    import http.client as httplib
 import time
 from dateutil.parser import parse
 import json
@@ -141,7 +144,7 @@ class EFS(Operations):
         self.logFile.write(msg)
         self.logFile.write("\n")
         self.logFile.flush()
-        print str(msg) + "\n"
+        print(str(msg) + "\n")
 
     # Filesystem methods
     # ==================
@@ -181,8 +184,8 @@ class EFS(Operations):
             "st_uid": self.uid,
             "st_gid": self.gid,
         }
-        print d
-        print os.statvfs("/tmp/file")
+        print(d)
+        print(os.statvfs("/tmp/file"))
         return d
     
     def getTime(self, obj):
@@ -195,9 +198,9 @@ class EFS(Operations):
     
     def getMode(self, obj):
         if obj["type"] == "file":
-            return 0444 + stat.S_IFREG
+            return 0o444 + stat.S_IFREG
         else:
-            return 0555 + stat.S_IFDIR
+            return 0o555 + stat.S_IFDIR
 
     def readdir(self, path, fh):
         self.log("readdir(" + str(path) + ", " + str(fh) + ")")
@@ -210,7 +213,7 @@ class EFS(Operations):
         obj = self.getObject(path, True)
         for c in obj["children"]:
             dirents.append(str(c["name"]))
-        print "dirents: " + str(dirents)
+        print("dirents: " + str(dirents))
         for r in dirents:
             yield r
 
@@ -219,7 +222,7 @@ class EFS(Operations):
         for obj in self.sessionInfo["dataSet"]:
             l.append(self.stripSlash(obj["mountPath"]))
         for obj in l:
-            print obj
+            print(obj)
             yield obj
     
     def stripSlash(self, str):
@@ -283,7 +286,7 @@ class EFS(Operations):
         lockId = self.lockObject(path)
         try:
             pfsPath = self.waitForFile(path)
-            print "Opening file " + pfsPath
+            print("Opening file " + pfsPath)
             handle = os.open(pfsPath, flags)
             self.locks[handle] = lockId
             return handle
@@ -298,7 +301,7 @@ class EFS(Operations):
         self.log("read(" + str(path) + ", " + str(length) + ", " + str(offset) + ", " + str(fh) + ")")
         os.lseek(fh, offset, os.SEEK_SET)
         data = os.read(fh, length)
-        print "Read: " + data
+        print("Read: " + data)
         return data
 
     def write(self, path, buf, offset, fh):
@@ -388,6 +391,6 @@ def unmount(instanceId):
 if __name__ == "__main__":
     sessionId = sys.argv[1]
     token = sys.argv[2]
-    print "SessionId: " + sessionId
-    print "Token: " + token
+    print("SessionId: " + sessionId)
+    print("Token: " + token)
     FUSE(EFS(sessionId, "/tmp", "http://localhost:8080/api/v1", token), "fuse/test", nothreads=True, foreground=True)

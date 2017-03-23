@@ -8,7 +8,7 @@ from girder.constants import AccessType
 from girder.models.folder import Folder
 from girder.models.item import Item
 from girder.models.model_base import AccessControlledModel, AccessException
-from lock import Lock
+from .lock import Lock
 from girder import events
 
 class Session(AccessControlledModel):
@@ -60,7 +60,7 @@ class Session(AccessControlledModel):
 
         session = self.save(session)
 
-        print 'Session ' + str(session['_id']) + ' created'
+        print('Session ' + str(session['_id']) + ' created')
         events.trigger('dm.sessionCreated', info = session)
 
         return session
