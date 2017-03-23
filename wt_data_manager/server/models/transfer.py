@@ -11,7 +11,7 @@ class Transfer(AccessControlledModel):
     def initialize(self):
         self.name = 'transfer'
         self.exposeFields(level = AccessType.READ, fields = {'_id', 'ownerId', 'sessionId',
-            'itemId', 'status', 'error', 'size', 'transferred', 'path'})
+            'itemId', 'status', 'error', 'size', 'transferred', 'path', 'startTime', 'endTime'})
         self.itemModel = Item()
 
     def validate(self, transfer):

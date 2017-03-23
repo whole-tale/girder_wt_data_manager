@@ -14,7 +14,7 @@ class Transfer(Resource):
     def initialize(self):
         self.name = 'transfer'
         self.exposeFields(level = AccessType.READ, fields = {'_id', 'ownerId', 'sessionId',
-            'itemId', 'status', 'error', 'size', 'transferred', 'path'})
+            'itemId', 'status', 'error', 'size', 'transferred', 'path', 'startTime', 'endTime'})
 
     def validate(self, transfer):
         return transfer
