@@ -37,7 +37,7 @@ class Lock(Resource):
             itemId = params['itemId']
         if 'ownerId' in params:
             ownerId = params['ownerId']
-        return list(self.model('lock', 'wt_data_manager').list(user = user,
+        return list(self.model('lock', 'wt_data_manager').listLocks(user = user,
             sessionId = sessionId, itemId = itemId, ownerId = ownerId))
 
     @access.user
@@ -49,7 +49,7 @@ class Lock(Resource):
     )
     def listLocksForSession(self, session, params):
         user = self.getCurrentUser()
-        return list(self.model('lock', 'wt_data_manager').list(user=user, sessionId=session['_id']))
+        return list(self.model('lock', 'wt_data_manager').listLocks(user=user, sessionId=session['_id']))
 
     @access.user
     @loadmodel(model='lock', plugin='wt_data_manager', level=AccessType.READ)
