@@ -125,19 +125,18 @@ class CollectionStrategy:
         return self.sortingScheme.itemSortKey(item)
 
 class CollectionThresholds:
-    def __init__(self):
-        pass
+    def __init__(self, settings):
+        self.settings = settings
 
     def shouldCollect(self, totalSize, usedSize):
-        pass
+        raise NotImplementedError()
 
     def shouldStopCollecting(self, totalSize, initialUsed, collected):
-        pass
+        raise NotImplementedError()
 
 class FractionalCollectionThresholds(CollectionThresholds):
     def __init__(self, settings):
-        CollectionThresholds.__init__(self)
-        self.settings = settings
+        CollectionThresholds.__init__(self, settings)
 
     def shouldCollect(self, totalSize, usedSize):
         return usedSize > totalSize * self.getCollectStartFraction()
@@ -156,7 +155,7 @@ class CollectionSortingScheme:
         pass
 
     def itemSortKey(self, item):
-        return 0
+        raise NotImplementedError()
 
 class LRUSortingScheme(CollectionSortingScheme):
     def __init__(self):
