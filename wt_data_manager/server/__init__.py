@@ -25,7 +25,13 @@ def load(info):
     lock = resources.lock.Lock()
     transfer = resources.transfer.Transfer()
 
-    info['apiRoot'].dm = resources.dm.DM()
+    lockModel = lock_model.Lock()
+    pathMapper = path_mapper.PathMapper()
+    transferManager = transfer_manager.DelayingSimpleTransferManager(pathMapper)
+    fileGC = file_gc.DummyFileGC(pathMapper)
+    cacheManager = cache_manager.SimpleCacheManager(transferManager, fileGC, pathMapper, lockModel)
+
+    info['apiRoot'].dm = resources.dm.DM(session, cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
     info['apiRoot'].dm.route('GET', ('session', ':id',), session.getSession)
     info['apiRoot'].dm.route('POST', ('session',), session.createSession)
@@ -42,11 +48,6 @@ def load(info):
 
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
 
-    lockModel = lock_model.Lock()
-    pathMapper = path_mapper.PathMapper()
-    transferManager = transfer_manager.DelayingSimpleTransferManager(pathMapper)
-    fileGC = file_gc.DummyFileGC(pathMapper)
-    cacheManager = cache_manager.SimpleCacheManager(transferManager, fileGC, pathMapper, lockModel)
 
     def itemLocked(event):
         dict = event.info

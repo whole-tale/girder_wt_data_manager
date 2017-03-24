@@ -34,6 +34,42 @@ dm.private_storage_path
 
 This points to a local path where the PS is located.
 
+### Non-REST API
+
+Some calls to the DM API, in particular calls that are likely to be made
+from other Girder/WT APIs, can be accessed through ``info['apiRoot'].dm``.
+The following methods are currently implemented:
+
+```python
+DM.createSession(user, dataSet)
+```
+
+where ``dataSet`` is a list of dictionaries with keys ``itemId`` and
+``mountPoint``, where ``itemId`` is a Girder item or folder id and
+``mountPoint`` is an absolute path where the item/folder are mounted in the
+EFS.
+
+```python
+DM.deleteSession(user, session = None, sessionId = None)
+```
+
+Deletes a session. One of ``session`` or ``sessionId`` must be non-null.
+
+Example:
+
+```python
+dm = info['apiRoot'].dm
+
+dataSet = [
+    {'itemId': '58b08d98cbb11e6d0f95df9f', 'mountPoint': '/x/y/z'},
+    {'itemId': '582f621ccbb11e75430a89ae', 'mountPoint': '/myfile.dat'},
+]
+
+session = dm.createSession(user, dataSet)
+...
+dm.deleteSession(user, session = session)
+```
+
 ### Sessions
 
 A session encapsulates the set of files that can be accessed by a tale. There

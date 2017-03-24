@@ -45,8 +45,9 @@ class Session(AccessControlledModel):
 
         :param user: The user creating the job.
         :type user: dict or None
-        :param dataSet: The initial dataSet associated with this session
-        :type dataSet: dict
+        :param dataSet: The initial dataSet associated with this session. The dataSet is a list
+         of dictionaries with two keys: 'itemId', and 'mountPath'
+        :type dataSet: list
         """
 
         session = {
