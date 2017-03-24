@@ -75,8 +75,7 @@ var ConfigView = View.extend({
         if (this.settingVals) {
             for (var i in this.SETTING_KEYS) {
                 var key = this.SETTING_KEYS[i];
-                this.$(this.settingControlId(key),
-                    this.settingVals[key]);
+                this.$(this.settingControlId(key)).val(this.settingVals[key]);
             }
         }
 
