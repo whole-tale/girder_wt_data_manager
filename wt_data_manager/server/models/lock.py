@@ -20,6 +20,7 @@ class Lock(AccessControlledModel):
     FIELD_DELETE_IN_PROGRESS = 'dm.deleteInProgress'
     FIELD_LOCK_COUNT = 'dm.lockCount'
     FIELD_CACHED = 'dm.cached'
+    FIELD_LAST_UNLOCKED = 'dm.lastUnlocked'
 
     def initialize(self):
         self.name = 'lock'
@@ -146,7 +147,10 @@ class Lock(AccessControlledModel):
         # then a query kills atomicity
         result = self.itemModel.collection.find_one_and_update(
             filter = {'_id': itemId},
-            update = {'$inc': {Lock.FIELD_LOCK_COUNT: -1}},
+            update = {
+                '$inc': {Lock.FIELD_LOCK_COUNT: -1},
+                '$currentDate': {Lock.FIELD_LAST_UNLOCKED: {'$type': 'timestamp'}}
+            },
             projection = [Lock.FIELD_LOCK_COUNT],
             return_document = ReturnDocument.AFTER
         )
@@ -182,3 +186,9 @@ class Lock(AccessControlledModel):
 
     def listDownloadingItems(self):
         return self.itemModel.find(query = {Lock.FIELD_TRANSFER_IN_PROGRESS: True})
+
+    def getCollectionCandidates(self):
+        return self.find(query = {
+            Lock.FIELD_CACHED: True,
+            Lock.FIELD_LOCK_COUNT: 0
+        })

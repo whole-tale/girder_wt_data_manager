@@ -4,6 +4,7 @@
 import constants
 from resources import session, dm, lock, transfer
 from models import lock as lock_model
+from girder.models.setting import Setting
 from girder.utility import setting_utilities
 from girder.constants import SettingDefault
 from lib import transfer_manager, file_gc, cache_manager, path_mapper
@@ -12,24 +13,43 @@ import traceback
 
 
 @setting_utilities.validator({
-    constants.PluginSettings.PRIVATE_STORAGE_PATH
+    constants.PluginSettings.PRIVATE_STORAGE_PATH,
+    constants.PluginSettings.PRIVATE_STORAGE_CAPACITY,
+    constants.PluginSettings.GC_RUN_INTERVAL
 })
 def validateOtherSettings(event):
     pass
 
 
 def load(info):
+    KB = 1024
+    MB = 1024 * KB
+    GB = 1024 * MB
     SettingDefault.defaults[constants.PluginSettings.PRIVATE_STORAGE_PATH] = '/home/mike/work/wt/ps'
+    SettingDefault.defaults[constants.PluginSettings.PRIVATE_STORAGE_CAPACITY] = 100 * GB
+    # run collection every 10 minutes
+    SettingDefault.defaults[constants.PluginSettings.GC_RUN_INTERVAL] = 10 * 60
+    # only collect if over %50 used
+    SettingDefault.defaults[constants.PluginSettings.GC_COLLECT_START_FRACTION] = 0.5
+    # stop collecting when below %50 usage
+    SettingDefault.defaults[constants.PluginSettings.GC_COLLECT_END_FRACTION] = 0.5
 
+    settings = Setting()
     session = resources.session.Session()
     lock = resources.lock.Lock()
     transfer = resources.transfer.Transfer()
 
     lockModel = lock_model.Lock()
-    pathMapper = path_mapper.PathMapper()
-    transferManager = transfer_manager.DelayingSimpleTransferManager(pathMapper)
-    fileGC = file_gc.DummyFileGC(pathMapper)
-    cacheManager = cache_manager.SimpleCacheManager(transferManager, fileGC, pathMapper, lockModel)
+    pathMapper = path_mapper.PathMapper(settings)
+    transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
+
+    # a GC that does nothing
+    fileGC = file_gc.DummyFileGC(settings, pathMapper)
+    #fileGC = file_gc.PeriodicFileGC(settings, pathMapper,
+    #            file_gc.CollectionStrategy(
+    #                file_gc.FractionalCollectionThresholds(settings),
+    #                file_gc.LRUSortingScheme()))
+    cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper, lockModel)
 
     info['apiRoot'].dm = resources.dm.DM(session, cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)

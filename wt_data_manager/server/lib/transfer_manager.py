@@ -111,7 +111,8 @@ class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
                 time.sleep(SlowGirderDownloadTransferHandler.DELAY)
 
 class TransferManager:
-    def __init__(self, pathMapper):
+    def __init__(self, settings, pathMapper):
+        self.settings = settings
         self.pathMapper = pathMapper
 
     def restartInterruptedTransfers(self):
@@ -149,8 +150,8 @@ class TransferManager:
 
 
 class SimpleTransferManager(TransferManager):
-    def __init__(self, pathMapper):
-        TransferManager.__init__(self, pathMapper)
+    def __init__(self, settings, pathMapper):
+        TransferManager.__init__(self, settings, pathMapper)
         self.restartInterruptedTransfers()
 
     def startTransfer(self, user, itemId, sessionId):
@@ -167,8 +168,8 @@ class SimpleTransferManager(TransferManager):
         return GirderDownloadTransferHandler(transferId, itemId, self.pathMapper.getPSPath(itemId))
 
 class DelayingSimpleTransferManager(SimpleTransferManager):
-    def __init__(self, pathMapper):
-        SimpleTransferManager.__init__(self, pathMapper)
+    def __init__(self, settings, pathMapper):
+        SimpleTransferManager.__init__(self, settings, pathMapper)
 
     def getTransferHandler(self, transferId, itemId):
         return SlowGirderDownloadTransferHandler(transferId, itemId, self.pathMapper.getPSPath(itemId))

@@ -1,6 +1,7 @@
 
 class CacheManager:
-    def __init__(self, transferManager, fileGC, pathMapper, lockModel):
+    def __init__(self, settings, transferManager, fileGC, pathMapper, lockModel):
+        self.settings = settings
         self.transferManager = transferManager
         self.fileGC = fileGC
         self.pathMapper = pathMapper
@@ -23,8 +24,8 @@ class CacheManager:
 
 
 class SimpleCacheManager(CacheManager):
-    def __init__(self, transferManager, fileGC, pathMapper, lockModel):
-        CacheManager.__init__(self, transferManager, fileGC, pathMapper, lockModel)
+    def __init__(self, settings, transferManager, fileGC, pathMapper, lockModel):
+        CacheManager.__init__(self, settings, transferManager, fileGC, pathMapper, lockModel)
 
     def itemLocked(self, user, itemId, sessionId):
         # initiates transfer immediately

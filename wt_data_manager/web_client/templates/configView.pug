@@ -11,5 +11,21 @@
             label.control-label(for=`g-wt-dm-private-storage-path`) Private Storage Path
             input.input-sm.form-control(id=`g-wt-dm-private-storage-path`,
                 type="text", placeholder="Private Storage Path")
+          .form-group
+            label.control-label(for=`g-wt-dm-private-storage-capacity`) Private Storage Capacity (bytes)
+            input.input-sm.form-control(id=`g-wt-dm-private-storage-capacity`,
+                type="text", placeholder="Private Storage Capacity")
+          .form-group
+            label.control-label(for=`g-wt-dm-gc-run-interval`) File GC Run Interval (seconds)
+            input.input-sm.form-control(id=`g-wt-dm-gc-run-interval`,
+                type="text", placeholder="File GC Run Interval")
+          .form-group
+            label.control-label(for=`g-wt-dm-gc-collect-start-fraction`) File GC Collection Start Fraction
+            input.input-sm.form-control(id=`g-wt-dm-gc-run-interval`,
+                type="text", placeholder="File GC Collection Start Fraction")
+          .form-group
+            label.control-label(for=`g-wt-dm-gc-collect-end-fraction`) File GC Collection End Fraction
+            input.input-sm.form-control(id=`g-wt-dm-gc-collect-end-fraction`,
+                type="text", placeholder="File GC Collection End Fraction")
           p.g-validation-failed-message(id=`g-wt-dm-config-error-message`)
           input.btn.btn-sm.btn-primary(type="submit", value="Save")

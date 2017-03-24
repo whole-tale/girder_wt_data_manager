@@ -8,29 +8,41 @@ import events from 'girder/events';
 import ConfigViewTemplate from '../templates/configView.pug';
 import '../stylesheets/configView.styl';
 
-var ConfigView = View.extend({
-    events: {
-        'submit .g-oauth-provider-form': function (event) {
-            event.preventDefault();
-            var providerId = $(event.target).attr('provider-id');
-            this.$('#g-oauth-provider-' + providerId + '-error-message').empty();
 
-            this._saveSettings([{
-                key: 'dm.private_storage_path',
-                value: this.$('#g-wt-dm-private-storage-path').val().trim()
-            }]);
+var ConfigView = View.extend({
+    SETTING_KEYS: [
+        'dm.private_storage_path',
+        'dm.private_storage_capacity',
+        'dm.gc_run_interval',
+        'dm.gc_collect_start_fraction',
+        'dm.gc_collect_end_fraction'
+    ],
+
+    settingControlId: function(key) {
+        return '#g-wt-dm-' + name.substring(3).replace(/_/g, '-');
+    },
+
+    events: {
+        'submit .g-wt-dm-config-form': function (event) {
+            event.preventDefault();
+
+            var slist = this.$.map(this.SETTING_KEYS, function(key) {
+                return {
+                    key: key,
+                    value: this.$('#g-wt-dm-' + this.settingControlId(key)).val().trim()
+                }
+            });
+
+            this._saveSettings(slist);
         }
     },
 
     initialize: function () {
-        var settingKeys = [];
-        settingKeys.push('dm.private_storage_path');
-
         restRequest({
             type: 'GET',
             path: 'system/setting',
             data: {
-                list: JSON.stringify(settingKeys)
+                list: JSON.stringify(this.SETTING_KEYS)
             }
         }).done(_.bind(function (resp) {
             console.log("Settings: ", resp);
@@ -61,8 +73,11 @@ var ConfigView = View.extend({
         }
 
         if (this.settingVals) {
-            this.$('#g-wt-dm-private-storage-path').val(
-                this.settingVals['dm.private_storage_path']);
+            for (var i in this.SETTING_KEYS) {
+                var key = this.SETTING_KEYS[i];
+                this.$(this.settingControlId(key),
+                    this.settingVals[key]);
+            }
         }
 
         return this;
