@@ -19,19 +19,19 @@ var ConfigView = View.extend({
     ],
 
     settingControlId: function(key) {
-        return '#g-wt-dm-' + name.substring(3).replace(/_/g, '-');
+        return '#g-wt-dm-' + key.substring(3).replace(/_/g, '-');
     },
 
     events: {
         'submit .g-wt-dm-config-form': function (event) {
             event.preventDefault();
 
-            var slist = this.$.map(this.SETTING_KEYS, function(key) {
+            var slist = this.SETTING_KEYS.map(function(key) {
                 return {
                     key: key,
-                    value: this.$('#g-wt-dm-' + this.settingControlId(key)).val().trim()
+                    value: this.$(this.settingControlId(key)).val().trim()
                 }
-            });
+            }, this);
 
             this._saveSettings(slist);
         }
