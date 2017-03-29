@@ -28,7 +28,7 @@ def load(info):
     KB = 1024
     MB = 1024 * KB
     GB = 1024 * MB
-    SettingDefault.defaults[PluginSettings.PRIVATE_STORAGE_PATH] = '/home/mike/work/wt/ps'
+    SettingDefault.defaults[PluginSettings.PRIVATE_STORAGE_PATH] = '/tmp/ps'
     SettingDefault.defaults[PluginSettings.PRIVATE_STORAGE_CAPACITY] = 100 * GB
     # run collection every 10 minutes
     SettingDefault.defaults[PluginSettings.GC_RUN_INTERVAL] = 10 * 60
