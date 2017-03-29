@@ -1,21 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import constants
-from resources import session, dm, lock, transfer
-from models import lock as lock_model
+from .constants import PluginSettings
+from .resources.session import Session
+from .resources.lock import Lock
+from .resources.transfer import Transfer
+from .resources.dm import DM
+from .models import lock as lock_model
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
 from girder.constants import SettingDefault
-from lib import transfer_manager, file_gc, cache_manager, path_mapper
+from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
 import traceback
 
 
 @setting_utilities.validator({
-    constants.PluginSettings.PRIVATE_STORAGE_PATH,
-    constants.PluginSettings.PRIVATE_STORAGE_CAPACITY,
-    constants.PluginSettings.GC_RUN_INTERVAL
+    PluginSettings.PRIVATE_STORAGE_PATH,
+    PluginSettings.PRIVATE_STORAGE_CAPACITY,
+    PluginSettings.GC_RUN_INTERVAL
 })
 def validateOtherSettings(event):
     pass
@@ -25,19 +28,19 @@ def load(info):
     KB = 1024
     MB = 1024 * KB
     GB = 1024 * MB
-    SettingDefault.defaults[constants.PluginSettings.PRIVATE_STORAGE_PATH] = '/home/mike/work/wt/ps'
-    SettingDefault.defaults[constants.PluginSettings.PRIVATE_STORAGE_CAPACITY] = 100 * GB
+    SettingDefault.defaults[PluginSettings.PRIVATE_STORAGE_PATH] = '/home/mike/work/wt/ps'
+    SettingDefault.defaults[PluginSettings.PRIVATE_STORAGE_CAPACITY] = 100 * GB
     # run collection every 10 minutes
-    SettingDefault.defaults[constants.PluginSettings.GC_RUN_INTERVAL] = 10 * 60
+    SettingDefault.defaults[PluginSettings.GC_RUN_INTERVAL] = 10 * 60
     # only collect if over %50 used
-    SettingDefault.defaults[constants.PluginSettings.GC_COLLECT_START_FRACTION] = 0.5
+    SettingDefault.defaults[PluginSettings.GC_COLLECT_START_FRACTION] = 0.5
     # stop collecting when below %50 usage
-    SettingDefault.defaults[constants.PluginSettings.GC_COLLECT_END_FRACTION] = 0.5
+    SettingDefault.defaults[PluginSettings.GC_COLLECT_END_FRACTION] = 0.5
 
     settings = Setting()
-    session = resources.session.Session()
-    lock = resources.lock.Lock()
-    transfer = resources.transfer.Transfer()
+    session = Session()
+    lock = Lock()
+    transfer = Transfer()
 
     lockModel = lock_model.Lock()
     pathMapper = path_mapper.PathMapper(settings)
@@ -51,7 +54,7 @@ def load(info):
     #                file_gc.LRUSortingScheme()))
     cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper, lockModel)
 
-    info['apiRoot'].dm = resources.dm.DM(session, cacheManager)
+    info['apiRoot'].dm = DM(session, cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
     info['apiRoot'].dm.route('GET', ('session', ':id',), session.getSession)
     info['apiRoot'].dm.route('POST', ('session',), session.createSession)

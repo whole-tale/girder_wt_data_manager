@@ -136,7 +136,7 @@ class TransferManager:
                 data.append(transfer)
 
         for item in data:
-            print 'Restarting transfer for item ' + str(item)
+            print('Restarting transfer for item ' + str(item))
             self.startTransfer(self.getUser(item['ownerId']), item['itemId'], item['sessionId'])
 
     def getUser(self, userId):
