@@ -25,14 +25,35 @@ case a new lock should be added, possibly in another session)
 
 ### Configuration
 
-wt_data_manager has one configuration option, exposed through the standard
-Girder plugin configuration interface:
+wt_data_manager has the following configuration options, exposed through the standard Girder plugin configuration interface:
 
-```
-dm.private_storage_path
-```
+#### dm.private_storage_path
 
-This points to a local path where the PS is located.
+Points to a local path where the PS is located.
+
+#### dm.private_storage_capacity
+
+The amount, in bytes, of storage allocated for the PS. This is used in
+various cache calculations
+
+#### dm.gc_run_interval
+
+For file garbage collectors that run periodically (descendants of
+``lib.file_gc.PeriodicFileGC``), this represents the approximate amount
+of time between GC invocations.
+
+#### dm.gc_collect_start_fraction
+
+For certain file GC strategies, this indicates the percentage of
+``dm.private_storage_capacity`` when the GC should kick-in. If the usage of
+the PS is below this threshold, no GC-ing would occur.
+
+#### dm.gc_collect_end_fraction
+
+Once the GC process starts, it will continue until either there are no more
+items that can be collected, or the PS usage drops below the percentage
+indicated by this setting
+
 
 ### Non-REST API
 
