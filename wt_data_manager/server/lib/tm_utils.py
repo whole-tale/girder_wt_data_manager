@@ -2,6 +2,8 @@ from ..models import transfer
 from ..models.lock import Lock
 from girder.models import item, file, user
 from girder import events
+from ..constants import TransferStatus
+import traceback
 
 
 class Models:
