@@ -13,7 +13,7 @@ from ..lib import efs
 from girder.api import rest
 from girder.models.setting import Setting
 from girder.plugins.wt_data_manager.constants import PluginSettings
-from girder.plugins.wt_data_manager.lib.girder_utils import GirderUtils
+
 
 class Container(AccessControlledModel):
     def initialize(self):
