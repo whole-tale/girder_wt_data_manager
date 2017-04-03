@@ -1,11 +1,13 @@
+from tm_utils import Models
+
 
 class CacheManager:
-    def __init__(self, settings, transferManager, fileGC, pathMapper, lockModel):
+    def __init__(self, settings, transferManager, fileGC, pathMapper):
         self.settings = settings
         self.transferManager = transferManager
         self.fileGC = fileGC
         self.pathMapper = pathMapper
-        self.lockModel = lockModel
+        self.lockModel = Models.lockModel
 
     def itemLocked(self, user, itemId, sessionId):
         pass
@@ -24,8 +26,8 @@ class CacheManager:
 
 
 class SimpleCacheManager(CacheManager):
-    def __init__(self, settings, transferManager, fileGC, pathMapper, lockModel):
-        CacheManager.__init__(self, settings, transferManager, fileGC, pathMapper, lockModel)
+    def __init__(self, settings, transferManager, fileGC, pathMapper):
+        CacheManager.__init__(self, settings, transferManager, fileGC, pathMapper)
 
     def itemLocked(self, user, itemId, sessionId):
         # initiates transfer immediately

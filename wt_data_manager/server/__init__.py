@@ -6,10 +6,11 @@ from .resources.session import Session
 from .resources.lock import Lock
 from .resources.transfer import Transfer
 from .resources.dm import DM
-from .models import lock as lock_model
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
+from models.lock import Lock as LockModel
 from girder.constants import SettingDefault
+import models.transfer
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
 import traceback
@@ -42,7 +43,7 @@ def load(info):
     lock = Lock()
     transfer = Transfer()
 
-    lockModel = lock_model.Lock()
+    lockModel = LockModel()
     pathMapper = path_mapper.PathMapper(settings)
     transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
 
@@ -52,8 +53,7 @@ def load(info):
     #            file_gc.CollectionStrategy(
     #                file_gc.FractionalCollectionThresholds(settings),
     #                file_gc.LRUSortingScheme()))
-    cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC,
-                                                    pathMapper, lockModel)
+    cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper)
 
     info['apiRoot'].dm = DM(session, cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)

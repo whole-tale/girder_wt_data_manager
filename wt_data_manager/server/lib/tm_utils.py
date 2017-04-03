@@ -1,16 +1,16 @@
-from ..models import transfer
-from ..models.lock import Lock
-from girder.models import item, file, user
+from girder.utility.model_importer import ModelImporter
 from girder import events
 from ..constants import TransferStatus
+from ..models.transfer import Transfer
+from ..models.lock import Lock
 import traceback
 
 
 class Models:
-    itemModel = item.Item()
-    fileModel = file.File()
-    userModel = user.User()
-    transferModel = transfer.Transfer()
+    itemModel = ModelImporter.model('item')
+    fileModel = ModelImporter.model('file')
+    userModel = ModelImporter.model('user')
+    transferModel = Transfer()
     lockModel = Lock()
 
 

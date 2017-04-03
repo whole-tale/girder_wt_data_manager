@@ -1,3 +1,4 @@
+from tm_utils import Models
 from ..models.lock import Lock
 from ..models.psinfo import PSInfo
 from .. import constants
@@ -14,7 +15,7 @@ BEGINNING_OF_TIME = datetime.datetime.fromtimestamp(0)
 class FileGC():
     def __init__(self, settings, pathMapper):
         self.settings = settings
-        self.lockModel = Lock()
+        self.lockModel = Models.lockModel
         self.pathMapper = pathMapper
 
     def deleteFile(self, itemId):

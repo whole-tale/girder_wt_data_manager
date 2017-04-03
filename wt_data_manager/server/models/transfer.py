@@ -1,5 +1,5 @@
 from girder.models.model_base import AccessControlledModel
-from girder.models.item import Item
+from girder.utility.model_importer import ModelImporter
 from girder.constants import AccessType
 from ..constants import TransferStatus
 from bson import objectid
@@ -14,7 +14,7 @@ class Transfer(AccessControlledModel):
         self.exposeFields(level=AccessType.READ,
                           fields={'_id', 'ownerId', 'sessionId', 'itemId', 'status', 'error',
                                   'size', 'transferred', 'path', 'startTime', 'endTime'})
-        self.itemModel = Item()
+        self.itemModel = ModelImporter.model('item')
 
     def validate(self, transfer):
         return transfer

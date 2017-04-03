@@ -5,10 +5,8 @@ import os
 
 from bson import objectid
 from girder.constants import AccessType
-from girder.models.folder import Folder
-from girder.models.item import Item
+from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import AccessControlledModel, AccessException
-from .lock import Lock
 from girder import events
 
 
@@ -17,9 +15,9 @@ class Session(AccessControlledModel):
         self.name = 'session'
         self.exposeFields(level=AccessType.READ,
                           fields={'_id', 'status', 'ownerId', 'dataSet', 'error'})
-        self.folderModel = Folder()
-        self.itemModel = Item()
-        self.lockModel = Lock()
+        self.folderModel = ModelImporter.model('folder')
+        self.itemModel = ModelImporter.model('item')
+        self.lockModel = ModelImporter.model('lock')
 
     def validate(self, session):
         return session

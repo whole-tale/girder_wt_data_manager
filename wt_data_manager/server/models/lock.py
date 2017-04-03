@@ -4,7 +4,7 @@
 
 from bson import objectid
 from girder.constants import AccessType
-from girder.models.item import Item
+from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import AccessControlledModel
 from pymongo.collection import ReturnDocument
 import time
@@ -24,7 +24,7 @@ class Lock(AccessControlledModel):
         self.name = 'lock'
         self.exposeFields(level=AccessType.READ, fields={'_id', 'userId', 'sessionId', 'itemId',
                                                          'ownerId'})
-        self.itemModel = Item()
+        self.itemModel = ModelImporter.model('item')
 
     def validate(self, lock):
         return lock
