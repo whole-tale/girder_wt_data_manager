@@ -1,5 +1,5 @@
-from girder.constants import SettingDefault
 from .. import constants
+
 
 class PathMapper:
     def __init__(self, settings):

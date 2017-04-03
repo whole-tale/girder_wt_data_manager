@@ -2,11 +2,14 @@ from ..models.lock import Lock
 from ..models.psinfo import PSInfo
 from .. import constants
 import os
-import time, datetime
+import time
+import datetime
 from threading import Thread
 from girder import logger
 
+
 BEGINNING_OF_TIME = datetime.datetime.fromtimestamp(0)
+
 
 class FileGC():
     def __init__(self, settings, pathMapper):
@@ -29,13 +32,15 @@ class FileGC():
     def unreacheable(self, itemId):
         pass
 
+
 class DummyFileGC(FileGC):
     def __init__(self, settings, pathMapper):
         FileGC.__init__(self, settings, pathMapper)
 
+
 class CollectorThread(Thread):
     def __init__(self, settings, collector):
-        Thread.__init__(self, name = 'DM File GC')
+        Thread.__init__(self, name='DM File GC')
         self.daemon = True
         self.settings = settings
         self.collector = collector
@@ -45,12 +50,13 @@ class CollectorThread(Thread):
             try:
                 logger.info('Running DM file GC')
                 self.collect()
-            except Exception as ex:
-                logger.error('File collection failure', exc_info = 1)
+            except Exception:
+                logger.error('File collection failure', exc_info=1)
             time.sleep(self.settings.get(constants.PluginSettings.GC_RUN_INTERVAL))
 
     def collect(self):
         self.collector.collect()
+
 
 class PeriodicFileGC(FileGC):
     def __init__(self, settings, pathMapper, collectionStrategy):
@@ -98,7 +104,7 @@ class PeriodicFileGC(FileGC):
         return item['size']
 
     def sortCandidates(self, list):
-        list.sort(key = lambda x: self.collectionStrategy.itemSortKey(x))
+        list.sort(key=lambda x: self.collectionStrategy.itemSortKey(x))
 
     def collectFile(self, item):
         return FileGC.deleteFile(self, item['_id'])
@@ -109,6 +115,7 @@ class PeriodicFileGC(FileGC):
 
     def updateUsedSpace(self, used):
         self.psInfo.updateInfo(used)
+
 
 class CollectionStrategy:
     def __init__(self, collectionThresholds, sortingScheme):
@@ -124,6 +131,7 @@ class CollectionStrategy:
     def itemSortKey(self, item):
         return self.sortingScheme.itemSortKey(item)
 
+
 class CollectionThresholds:
     def __init__(self, settings):
         self.settings = settings
@@ -133,6 +141,7 @@ class CollectionThresholds:
 
     def shouldStopCollecting(self, totalSize, initialUsed, collected):
         raise NotImplementedError()
+
 
 class FractionalCollectionThresholds(CollectionThresholds):
     def __init__(self, settings):
@@ -150,12 +159,14 @@ class FractionalCollectionThresholds(CollectionThresholds):
     def getCollectEndFraction(self):
         return self.settings.get(constants.PluginSettings.GC_COLLECT_END_FRACTION)
 
+
 class CollectionSortingScheme:
     def __init__(self):
         pass
 
     def itemSortKey(self, item):
         raise NotImplementedError()
+
 
 class LRUSortingScheme(CollectionSortingScheme):
     def __init__(self):
@@ -167,4 +178,3 @@ class LRUSortingScheme(CollectionSortingScheme):
         else:
             logger.warn('Item %s does not have a dm.lastUnlocked field.' % item['_id'])
             return BEGINNING_OF_TIME
-

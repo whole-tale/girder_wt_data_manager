@@ -1,6 +1,7 @@
 from ..transfer_manager import TransferHandler, Models, TransferStatus
 import os
 
+
 class UrlTransferHandler(TransferHandler):
     def __init__(self, url, transferId, itemId, psPath):
         TransferHandler.__init__(self, transferId, itemId, psPath)
@@ -13,6 +14,7 @@ class UrlTransferHandler(TransferHandler):
         except OSError:
             pass
 
+
 class FileLikeUrlTransferHandler(UrlTransferHandler):
     BUFSZ = 32768
 
@@ -20,8 +22,8 @@ class FileLikeUrlTransferHandler(UrlTransferHandler):
         UrlTransferHandler.__init__(self, url, transferId, itemId, psPath)
 
     def transfer(self):
-        Models.transferModel.setStatus(self.transferId,
-            TransferStatus.TRANSFERRING, size = self.flen, transferred = 0, setTransferStartTime = True)
+        Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,
+                                       size=self.flen, transferred=0, setTransferStartTime=True)
 
         self.mkdirs()
         with open(self.psPath, 'w') as outf, self.openInputStream() as inf:

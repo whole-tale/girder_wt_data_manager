@@ -18,7 +18,7 @@ var ConfigView = View.extend({
         'dm.gc_collect_end_fraction'
     ],
 
-    settingControlId: function(key) {
+    settingControlId: function (key) {
         return '#g-wt-dm-' + key.substring(3).replace(/_/g, '-');
     },
 
@@ -26,11 +26,11 @@ var ConfigView = View.extend({
         'submit .g-wt-dm-config-form': function (event) {
             event.preventDefault();
 
-            var slist = this.SETTING_KEYS.map(function(key) {
+            var slist = this.SETTING_KEYS.map(function (key) {
                 return {
                     key: key,
                     value: this.$(this.settingControlId(key)).val().trim()
-                }
+                };
             }, this);
 
             this._saveSettings(slist);
@@ -45,7 +45,7 @@ var ConfigView = View.extend({
                 list: JSON.stringify(this.SETTING_KEYS)
             }
         }).done(_.bind(function (resp) {
-            console.log("Settings: ", resp);
+            console.log('Settings: ', resp);
             this.settingVals = resp;
             this.render();
         }, this));
@@ -61,7 +61,7 @@ var ConfigView = View.extend({
 
         this.$el.html(ConfigViewTemplate({
             origin: origin,
-            apiRoot: _apiRoot,
+            apiRoot: _apiRoot
         }));
 
         if (!this.breadcrumb) {

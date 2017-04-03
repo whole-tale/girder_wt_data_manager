@@ -10,6 +10,7 @@ from girder import events
 import os
 import traceback
 
+
 class Models:
     itemModel = item.Item()
     fileModel = file.File()
@@ -20,7 +21,7 @@ class Models:
 
 class TransferThread(threading.Thread):
     def __init__(self, itemId, transferHandler):
-        threading.Thread.__init__(self, name = 'TransferThread[' + str(itemId) + ']')
+        threading.Thread.__init__(self, name='TransferThread[' + str(itemId) + ']')
         self.daemon = True
         self.itemId = itemId
         self.transferHandler = transferHandler
@@ -28,8 +29,9 @@ class TransferThread(threading.Thread):
     def run(self):
         try:
             self.transferHandler.run()
-        except Exception as ex:
+        except Exception:
             traceback.print_exc()
+
 
 class TransferHandler:
     TRANSFER_UPDATE_MIN_CHUNK_SIZE = 1024 * 1024
@@ -46,21 +48,21 @@ class TransferHandler:
     def run(self):
         try:
             Models.transferModel.setStatus(self.transferId,
-                TransferStatus.INITIALIZING)
+                                           TransferStatus.INITIALIZING)
             self.transfer()
-            Models.transferModel.setStatus(self.transferId,
-                TransferStatus.DONE, size = self.flen, transferred = self.flen, setTransferEndTime = True)
+            Models.transferModel.setStatus(self.transferId, TransferStatus.DONE, size=self.flen,
+                                           transferred=self.flen, setTransferEndTime=True)
             self.transferDone()
         except Exception as ex:
-            Models.transferModel.setStatus(self.transferId,
-                TransferStatus.FAILED, error = ex.message, setTransferEndTime = True)
+            Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
+                                           error=ex.message, setTransferEndTime=True)
             traceback.print_exc()
 
     def transfer(self):
         pass
 
     def transferDone(self):
-        events.trigger('dm.fileDownloaded', info = {'itemId': self.itemId, 'psPath': self.psPath})
+        events.trigger('dm.fileDownloaded', info={'itemId': self.itemId, 'psPath': self.psPath})
 
     def updateTransferProgress(self, size, transferred):
         # to avoid too many db requests, update only on:
@@ -69,10 +71,10 @@ class TransferHandler:
         #   (less would not be visible on a progress bar shorted than 1000px)
         delta = transferred - self.lastTransferred
         if delta >= TransferHandler.TRANSFER_UPDATE_MIN_CHUNK_SIZE and \
-            delta >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE:
+                delta >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE:
 
-            Models.transferModel.setStatus(self.transferId,
-                TransferStatus.TRANSFERRING, size = size, transferred = transferred)
+            Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING, size=size,
+                                           transferred=transferred)
             self.lastTransferred = transferred
 
 
@@ -81,16 +83,16 @@ class GirderDownloadTransferHandler(TransferHandler):
     def __init__(self, transferId, itemId, psPath):
         TransferHandler.__init__(self, transferId, itemId, psPath)
 
-
     def transfer(self):
-        files = list(Models.itemModel.childFiles(item = self.item))
+        files = list(Models.itemModel.childFiles(item=self.item))
         if len(files) != 1:
-            raise Exception('Wrong number of files for item ' + str(self.itemId) + ': ' + str(len(files)))
+            raise Exception('Wrong number of files for item ' + str(self.itemId) + ': ' +
+                            str(len(files)))
         fileId = files[0]['_id']
-        Models.transferModel.setStatus(self.transferId,
-            TransferStatus.TRANSFERRING, size = self.flen, transferred = 0, setTransferStartTime = True)
-        file = Models.fileModel.load(fileId, force = True)
-        stream = Models.fileModel.download(file, headers = False)
+        Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,
+                                       size=self.flen, transferred=0, setTransferStartTime=True)
+        file = Models.fileModel.load(fileId, force=True)
+        stream = Models.fileModel.download(file, headers=False)
 
         try:
             os.makedirs(os.path.dirname(self.psPath))
@@ -126,6 +128,7 @@ class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
             if SlowGirderDownloadTransferHandler.DELAY > 0:
                 time.sleep(SlowGirderDownloadTransferHandler.DELAY)
 
+
 class TransferManager:
     def __init__(self, settings, pathMapper):
         self.settings = settings
@@ -157,7 +160,7 @@ class TransferManager:
             self.startTransfer(self.getUser(item['ownerId']), item['itemId'], item['sessionId'])
 
     def getUser(self, userId):
-        return Models.userModel.load(userId, force = True)
+        return Models.userModel.load(userId, force=True)
 
     def startTransfer(self, user, itemId, sessionId):
         pass
@@ -182,11 +185,11 @@ class SimpleTransferManager(TransferManager):
         transferThread.start()
 
     def getTransferHandler(self, transferId, itemId):
-        item = Models.itemModel.load(itemId, level = AccessType.READ, user = user)
+        item = Models.itemModel.load(itemId, level=AccessType.READ, user=user)
         psPath = self.pathMapper.getPSPath(itemId)
         if 'meta' in item and 'phys_path' in item['meta']:
             url = item['meta']['phys_path']
-            if not 'size' in item['meta']:
+            if 'size' not in item['meta']:
                 raise ValueError('Item ' + str(itemId) + ' must have a meta.size attribute')
             return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath)
         else:
@@ -198,4 +201,5 @@ class DelayingSimpleTransferManager(SimpleTransferManager):
         SimpleTransferManager.__init__(self, settings, pathMapper)
 
     def getTransferHandler(self, transferId, itemId):
-        return SlowGirderDownloadTransferHandler(transferId, itemId, self.pathMapper.getPSPath(itemId))
+        return SlowGirderDownloadTransferHandler(transferId, itemId,
+                                                 self.pathMapper.getPSPath(itemId))

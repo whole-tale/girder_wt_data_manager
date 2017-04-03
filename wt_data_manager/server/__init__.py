@@ -48,11 +48,12 @@ def load(info):
 
     # a GC that does nothing
     fileGC = file_gc.DummyFileGC(settings, pathMapper)
-    #fileGC = file_gc.PeriodicFileGC(settings, pathMapper,
+    # fileGC = file_gc.PeriodicFileGC(settings, pathMapper,
     #            file_gc.CollectionStrategy(
     #                file_gc.FractionalCollectionThresholds(settings),
     #                file_gc.LRUSortingScheme()))
-    cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper, lockModel)
+    cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC,
+                                                    pathMapper, lockModel)
 
     info['apiRoot'].dm = DM(session, cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
@@ -67,7 +68,8 @@ def load(info):
 
     info['apiRoot'].dm.route('GET', ('session', ':id', 'object'), session.getObject)
     info['apiRoot'].dm.route('GET', ('session', ':id', 'lock',), lock.listLocksForSession)
-    info['apiRoot'].dm.route('GET', ('session', ':id', 'transfer'), transfer.listTransfersForSession)
+    info['apiRoot'].dm.route('GET', ('session', ':id', 'transfer'),
+                             transfer.listTransfersForSession)
 
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
 
@@ -94,7 +96,7 @@ def load(info):
 
     events.bind('dm.sessionCreated', 'sessionCreated', sessionCreated)
     events.bind('dm.sessionDeleted', 'sessionDeleted', sessionDeleted)
-    #TODO: add session file changes
+    # TODO: add session file changes
     events.bind('dm.itemLocked', 'itemLocked', itemLocked)
     events.bind('dm.itemUnlocked', 'itemUnlocked', itemUnlocked)
     events.bind('dm.fileDownloaded', 'fileDownloaded', fileDownloaded)

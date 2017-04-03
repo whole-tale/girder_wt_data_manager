@@ -5,26 +5,29 @@ from ..constants import TransferStatus
 from bson import objectid
 import datetime
 
+
 class Transfer(AccessControlledModel):
-    OLD_TRANSFER_LIMIT = datetime.timedelta(minutes = 1)
+    OLD_TRANSFER_LIMIT = datetime.timedelta(minutes=1)
 
     def initialize(self):
         self.name = 'transfer'
-        self.exposeFields(level = AccessType.READ, fields = {'_id', 'ownerId', 'sessionId',
-            'itemId', 'status', 'error', 'size', 'transferred', 'path', 'startTime', 'endTime'})
+        self.exposeFields(level=AccessType.READ,
+                          fields={'_id', 'ownerId', 'sessionId', 'itemId', 'status', 'error',
+                                  'size', 'transferred', 'path', 'startTime', 'endTime'})
         self.itemModel = Item()
 
     def validate(self, transfer):
         return transfer
 
     def createTransfer(self, user, itemId, sessionId):
-        existing = self.findOne(query = {'itemId': itemId, 'ownerId': user['_id'], 'sessionId': sessionId})
+        existing = self.findOne(query={'itemId': itemId, 'ownerId': user['_id'],
+                                       'sessionId': sessionId})
 
-        transferId = None
-        if existing != None:
+        if existing is not None:
             transferId = existing['_id']
         else:
             transferId = objectid.ObjectId()
+
         pathFromRoot = self.getPathFromRoot(user, itemId)
         transfer = {
             '_id': transferId,
@@ -38,29 +41,23 @@ class Transfer(AccessControlledModel):
             'path': pathFromRoot
         }
 
-        self.setUserAccess(transfer, user = user, level = AccessType.ADMIN)
+        self.setUserAccess(transfer, user=user, level=AccessType.ADMIN)
         transfer = self.save(transfer)
 
         return transfer
 
     def getPathFromRoot(self, user, itemId):
-        item = self.itemModel.load(itemId, user = user, level = AccessType.READ)
-        dictPath = self.itemModel.parentsToRoot(item, user = user)
+        item = self.itemModel.load(itemId, user=user, level=AccessType.READ)
+        dictPath = self.itemModel.parentsToRoot(item, user=user)
         pathFromRoot = '/'
         for dict in dictPath:
             pathFromRoot = pathFromRoot + '/' + dict['object']['name']
         return pathFromRoot
 
 
-    def setStatus(self, transferId, status, error = None, size = 0, transferred = 0,
-            setTransferStartTime = False, setTransferEndTime = False):
-        doc = {
-            '_id': transferId,
-            'status': status,
-            'error': error,
-            'size': size,
-            'transferred': transferred
-        }
+    def setStatus(self, transferId, status, error=None, size=0, transferred=0,
+                  setTransferStartTime=False, setTransferEndTime=False):
+
         update = {
             '$set': {
                 'status': status,
@@ -80,26 +77,26 @@ class Transfer(AccessControlledModel):
             update['$currentDate']['endTime'] = {'$type': 'timestamp'}
 
         self.update(
-            query = {'_id': transferId},
-            update = update
+            query={'_id': transferId},
+            update=update
         )
 
-    def list(self, user, sessionId = None, discardOld = True):
-        if sessionId == None:
-            return self.listAllForUser(user, discardOld = discardOld)
+    def list(self, user, sessionId=None, discardOld=True):
+        if sessionId is None:
+            return self.listAllForUser(user, discardOld=discardOld)
         else:
-            return self.listAllForSession(user, sessionId, discardOld = discardOld)
+            return self.listAllForSession(user, sessionId, discardOld=discardOld)
 
-    def listAll(self, discardOld = True):
+    def listAll(self, discardOld=True):
         query = self.getTimeConstraintQuery(discardOld)
         return self.find(query)
 
-    def listAllForUser(self, user, discardOld = True):
+    def listAllForUser(self, user, discardOld=True):
         query = self.getTimeConstraintQuery(discardOld)
         query['ownerId'] = user['_id']
         return self.find(query)
 
-    def listAllForSession(self, user, sessionId, discardOld = True):
+    def listAllForSession(self, user, sessionId, discardOld=True):
         query = self.getTimeConstraintQuery(discardOld)
         query['ownerId'] = user['_id']
         query['sessionId'] = sessionId
@@ -111,7 +108,7 @@ class Transfer(AccessControlledModel):
                 '$or': [
                     {
                         'endTime': {
-                          '$exists': False
+                            '$exists': False
                         }
                     },
                     {

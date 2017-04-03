@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 
 from bson import objectid
 from girder.constants import AccessType
@@ -10,7 +9,6 @@ from girder.models.model_base import AccessControlledModel
 from pymongo.collection import ReturnDocument
 import time
 from girder import events
-
 
 
 # This is the long-term item lock model. Locking in this context means
@@ -24,23 +22,24 @@ class Lock(AccessControlledModel):
 
     def initialize(self):
         self.name = 'lock'
-        self.exposeFields(level = AccessType.READ, fields = {'_id', 'userId', 'sessionId', 'itemId', 'ownerId'})
+        self.exposeFields(level=AccessType.READ, fields={'_id', 'userId', 'sessionId', 'itemId',
+                                                         'ownerId'})
         self.itemModel = Item()
 
     def validate(self, lock):
         return lock
 
-    def listLocks(self, user, sessionId = None, itemId = None, ownerId = None):
+    def listLocks(self, user, sessionId=None, itemId=None, ownerId=None):
         query = {'userId': user['_id']}
-        if sessionId != None:
+        if sessionId is not None:
             query['sessionId'] = sessionId
-        if itemId != None:
+        if itemId is not None:
             query['itemId'] = itemId
-        if ownerId != None:
+        if ownerId is not None:
             query['ownerId'] = ownerId
         return self.find(query)
 
-    def acquireLock(self, user, sessionId, itemId, ownerId = None):
+    def acquireLock(self, user, sessionId, itemId, ownerId=None):
         """
         Adds a new lock to an item.
 
@@ -54,7 +53,7 @@ class Lock(AccessControlledModel):
         :type ownerId: string or ObjectId
         """
 
-        if ownerId == None:
+        if ownerId is None:
             ownerId = sessionId
 
         itemId = objectid.ObjectId(itemId)
@@ -67,7 +66,7 @@ class Lock(AccessControlledModel):
             'ownerId': ownerId
         }
 
-        self.setUserAccess(lock, user = user, level = AccessType.ADMIN)
+        self.setUserAccess(lock, user=user, level=AccessType.ADMIN)
         lock = self.save(lock)
 
         self.waitForPendingDelete(itemId)
@@ -75,7 +74,7 @@ class Lock(AccessControlledModel):
         if (self.tryLock(user, sessionId, itemId, ownerId)):
             # we own the transfer
             events.trigger('dm.itemLocked',
-                info = {'itemId': itemId, 'user': user, 'sessionId': sessionId})
+                           info={'itemId': itemId, 'user': user, 'sessionId': sessionId})
         return lock
 
     def waitForPendingDelete(self, itemId):
@@ -89,47 +88,47 @@ class Lock(AccessControlledModel):
         done = False
         while not done:
             result = self.itemModel.update(
-                query = {'_id': itemId, Lock.FIELD_DELETE_IN_PROGRESS: {'$ne': True}},
+                query={'_id': itemId, Lock.FIELD_DELETE_IN_PROGRESS: {'$ne': True}},
                 # make sure no deletes can creep in
-                update = {'$inc': {Lock.FIELD_LOCK_COUNT: 1}},
-                multi = False)
+                update={'$inc': {Lock.FIELD_LOCK_COUNT: 1}},
+                multi=False)
             done = result.matched_count > 0
             if not done:
                 time.sleep(0.05)
 
     def tryLockForDeletion(self, itemId):
         result = self.itemModel.update(
-            query = {
+            query={
                 '_id': itemId,
                 Lock.FIELD_DELETE_IN_PROGRESS: {'$ne': True},
                 Lock.FIELD_LOCK_COUNT: 0
             },
-            update = {'$set': {Lock.FIELD_DELETE_IN_PROGRESS: True}},
-            multi = False)
+            update={'$set': {Lock.FIELD_DELETE_IN_PROGRESS: True}},
+            multi=False)
         return result.matched_count > 0
 
     def unlockForDeletion(self, itemId):
         self.itemModel.update(
-            query = {'_id': itemId},
-            update = {'$set': {Lock.FIELD_DELETE_IN_PROGRESS: False}},
-            multi = False)
+            query={'_id': itemId},
+            update={'$set': {Lock.FIELD_DELETE_IN_PROGRESS: False}},
+            multi=False)
 
     def tryLock(self, user, sessionId, itemId, ownerId):
         # Luckily, Mongo updates are atomic
         result = self.itemModel.update(
-            query = {
+            query={
                 '_id': itemId,
                 Lock.FIELD_TRANSFER_IN_PROGRESS: {'$ne': True},
                 Lock.FIELD_CACHED: {'$ne': True}
             },
-            update = {
+            update={
                 '$set': {
                     Lock.FIELD_TRANSFER_IN_PROGRESS: True,
                     'dm.transfer.userId': user['_id'],
                     'dm.transfer.sessionId': sessionId,
                 }
             },
-            multi = False)
+            multi=False)
         return result.matched_count > 0
 
     def releaseLock(self, user, lock):
@@ -146,13 +145,13 @@ class Lock(AccessControlledModel):
         # Need an update that returns the document. Doing an update and
         # then a query kills atomicity
         result = self.itemModel.collection.find_one_and_update(
-            filter = {'_id': itemId},
-            update = {
+            filter={'_id': itemId},
+            update={
                 '$inc': {Lock.FIELD_LOCK_COUNT: -1},
                 '$currentDate': {Lock.FIELD_LAST_UNLOCKED: {'$type': 'timestamp'}}
             },
-            projection = [Lock.FIELD_LOCK_COUNT],
-            return_document = ReturnDocument.AFTER
+            projection=[Lock.FIELD_LOCK_COUNT],
+            return_document=ReturnDocument.AFTER
         )
         # can't do [FIELD_LOCK_COUNT] unfortunately
         return result['dm']['lockCount'] == 0
@@ -162,16 +161,16 @@ class Lock(AccessControlledModel):
 
     def fileDeleted(self, itemId):
         self.itemModel.update(
-            query = {'_id': itemId},
-            update = {'$set': {Lock.FIELD_CACHED: False, Lock.FIELD_DELETE_IN_PROGRESS: False}},
-            multi = False)
+            query={'_id': itemId},
+            update={'$set': {Lock.FIELD_CACHED: False, Lock.FIELD_DELETE_IN_PROGRESS: False}},
+            multi=False)
 
     def fileDownloaded(self, info):
         itemId = info['itemId']
         psPath = info['psPath']
         self.itemModel.update(
-            query = {'_id': itemId},
-            update = {
+            query={'_id': itemId},
+            update={
                 '$set': {
                     Lock.FIELD_CACHED: True,
                     Lock.FIELD_TRANSFER_IN_PROGRESS: False,
@@ -182,13 +181,13 @@ class Lock(AccessControlledModel):
                     'dm.transfer.sessionId': True
                 }
             },
-            multi = False)
+            multi=False)
 
     def listDownloadingItems(self):
-        return self.itemModel.find(query = {Lock.FIELD_TRANSFER_IN_PROGRESS: True})
+        return self.itemModel.find(query={Lock.FIELD_TRANSFER_IN_PROGRESS: True})
 
     def getCollectionCandidates(self):
-        return self.find(query = {
+        return self.find(query={
             Lock.FIELD_CACHED: True,
             Lock.FIELD_LOCK_COUNT: 0
         })

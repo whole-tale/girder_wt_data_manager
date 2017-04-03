@@ -1,7 +1,6 @@
-from girder import logger
-
 from handlers.local import Local
 from handlers.http import Http
+
 
 class HandlerFactory:
     def __init__(self):
@@ -15,7 +14,7 @@ class HandlerFactory:
         self.handlers['file'] = Local
 
     def getURLTransferHandler(self, url, transferId, itemId, psPath):
-        if url == None or url == '':
+        if url is None or url == '':
             raise ValueError()
         ix = url.find('://')
         if ix == -1:
@@ -25,6 +24,6 @@ class HandlerFactory:
             return self.newTransferHandler(proto, url, transferId, itemId, psPath)
 
     def newTransferHandler(self, name, url, transferId, itemId, psPath):
-        if not name in self.handlers:
+        if name not in self.handlers:
             raise ValueError('No such handler: "' + name + '"')
         return self.handlers[name](url, transferId, itemId, psPath)

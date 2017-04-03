@@ -11,10 +11,12 @@ from girder.models.model_base import AccessControlledModel, AccessException
 from .lock import Lock
 from girder import events
 
+
 class Session(AccessControlledModel):
     def initialize(self):
         self.name = 'session'
-        self.exposeFields(level = AccessType.READ, fields = {'_id', 'status', 'ownerId', 'dataSet', 'error'})
+        self.exposeFields(level=AccessType.READ,
+                          fields={'_id', 'status', 'ownerId', 'dataSet', 'error'})
         self.folderModel = Folder()
         self.itemModel = Item()
         self.lockModel = Lock()
@@ -22,7 +24,7 @@ class Session(AccessControlledModel):
     def validate(self, session):
         return session
 
-    def list(self, user, limit = 0, offset = 0, sort = None):
+    def list(self, user, limit=0, offset=0, sort=None):
         """
         List a page of containers for a given user.
 
@@ -33,13 +35,13 @@ class Session(AccessControlledModel):
         :param sort: The sort field.
         """
         userId = user['_id'] if user else None
-        cursor = self.find({'ownerId': userId}, sort = sort)
+        cursor = self.find({'ownerId': userId}, sort=sort)
 
-        for r in self.filterResultsByPermission(cursor = cursor, user = user,
-            level = AccessType.READ, limit = limit, offset = offset):
+        for r in self.filterResultsByPermission(cursor=cursor, user=user, level=AccessType.READ,
+                                                limit=limit, offset=offset):
             yield r
 
-    def createSession(self, user, dataSet = None):
+    def createSession(self, user, dataSet=None):
         """
         Create a new session.
 
@@ -56,12 +58,12 @@ class Session(AccessControlledModel):
             'dataSet': dataSet
         }
 
-        self.setUserAccess(session, user = user, level = AccessType.ADMIN)
+        self.setUserAccess(session, user=user, level=AccessType.ADMIN)
 
         session = self.save(session)
 
         print('Session ' + str(session['_id']) + ' created')
-        events.trigger('dm.sessionCreated', info = session)
+        events.trigger('dm.sessionCreated', info=session)
 
         return session
 
@@ -115,7 +117,7 @@ class Session(AccessControlledModel):
         (tail, rootContainer) = self.findRootContainer(session, path)
         crtObj = rootContainer
 
-        if tail != None:
+        if tail is not None:
             pathEls = self.splitPath(tail)
             for item in pathEls:
                 crtObj = self.findObjectInFolder(crtObj, item)
@@ -146,12 +148,12 @@ class Session(AccessControlledModel):
 
     def loadObject(self, id):
         item = self.folderModel.load(id, level=AccessType.READ)
-        if item != None:
+        if item is not None:
             item['type'] = 'folder'
             return item
         else:
             item = self.itemModel.load(id, level=AccessType.READ)
-            if item != None:
+            if item is not None:
                 item['type'] = 'file'
                 return item
         raise LookupError("No such object: " + id)
@@ -164,12 +166,14 @@ class Session(AccessControlledModel):
     def findObjectInFolder(self, container, name):
         parentId = container['_id']
 
-        item = self.folderModel.findOne(query = {'parentId': parentId, 'name': name}, level=AccessType.READ)
-        if item != None:
+        item = self.folderModel.findOne(query={'parentId': parentId, 'name': name},
+                                        level=AccessType.READ)
+        if item is not None:
             item['type'] = 'folder'
             return item
-        item = self.itemModel.findOne(query={'folderId': parentId, 'name': name}, level=AccessType.READ)
-        if item != None:
+        item = self.itemModel.findOne(query={'folderId': parentId, 'name': name},
+                                      level=AccessType.READ)
+        if item is not None:
             item['type'] = 'file'
             return item
         raise LookupError('No such object: ' + name)
@@ -182,5 +186,5 @@ class Session(AccessControlledModel):
         return l
 
     def getPrivateStoragePath(self, itemId):
-        item = self.itemModel.findOne(query = {'_id': itemId}, fields = ['dm.psPath'])
+        item = self.itemModel.findOne(query={'_id': itemId}, fields=['dm.psPath'])
         return item['dm.psPath']
