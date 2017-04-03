@@ -8,9 +8,7 @@ from .resources.transfer import Transfer
 from .resources.dm import DM
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
-from models.lock import Lock as LockModel
 from girder.constants import SettingDefault
-import models.transfer
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
 import traceback
@@ -43,7 +41,6 @@ def load(info):
     lock = Lock()
     transfer = Transfer()
 
-    lockModel = LockModel()
     pathMapper = path_mapper.PathMapper(settings)
     transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
 
