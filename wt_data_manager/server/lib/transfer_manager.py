@@ -1,8 +1,10 @@
 from ..models import transfer
 from ..models.lock import Lock
 from ..constants import TransferStatus
+from handler_factory import HandlerFactory
 import threading
 from girder.models import item, file, user
+from girder.constants import AccessType
 import time
 from girder import events
 import os
@@ -14,6 +16,7 @@ class Models:
     userModel = user.User()
     transferModel = transfer.Transfer()
     lockModel = Lock()
+
 
 class TransferThread(threading.Thread):
     def __init__(self, itemId, transferHandler):
@@ -29,11 +32,16 @@ class TransferThread(threading.Thread):
             traceback.print_exc()
 
 class TransferHandler:
+    TRANSFER_UPDATE_MIN_CHUNK_SIZE = 1024 * 1024
+    TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE = 0.001
+
     def __init__(self, transferId, itemId, psPath):
         self.transferId = transferId
         self.itemId = itemId
         self.psPath = psPath
         self.flen = 0
+        self.item = Models.itemModel.load(self.itemId, force=True)
+        self.lastTransferred = 0
 
     def run(self):
         try:
@@ -54,6 +62,19 @@ class TransferHandler:
     def transferDone(self):
         events.trigger('dm.fileDownloaded', info = {'itemId': self.itemId, 'psPath': self.psPath})
 
+    def updateTransferProgress(self, size, transferred):
+        # to avoid too many db requests, update only on:
+        # - TRANSFER_UPDATE_MIN_CHUNK_SIZE AND
+        # - TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE transferred
+        #   (less would not be visible on a progress bar shorted than 1000px)
+        delta = transferred - self.lastTransferred
+        if delta >= TransferHandler.TRANSFER_UPDATE_MIN_CHUNK_SIZE and \
+            delta >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE:
+
+            Models.transferModel.setStatus(self.transferId,
+                TransferStatus.TRANSFERRING, size = size, transferred = transferred)
+            self.lastTransferred = transferred
+
 
 class GirderDownloadTransferHandler(TransferHandler):
 
@@ -62,12 +83,10 @@ class GirderDownloadTransferHandler(TransferHandler):
 
 
     def transfer(self):
-        item = Models.itemModel.load(self.itemId, force = True)
-        files = list(Models.itemModel.childFiles(item = item))
+        files = list(Models.itemModel.childFiles(item = self.item))
         if len(files) != 1:
             raise Exception('Wrong number of files for item ' + str(self.itemId) + ': ' + str(len(files)))
         fileId = files[0]['_id']
-        self.flen = files[0]['size']
         Models.transferModel.setStatus(self.transferId,
             TransferStatus.TRANSFERRING, size = self.flen, transferred = 0, setTransferStartTime = True)
         file = Models.fileModel.load(fileId, force = True)
@@ -89,11 +108,8 @@ class GirderDownloadTransferHandler(TransferHandler):
         for chunk in stream():
             outf.write(chunk)
             crt = crt + len(chunk)
-            self.updateTransferStatus(crt)
+            self.updateTransferProgress(self.flen, crt)
 
-    def updateTransferStatus(self, transferred):
-        Models.transferModel.setStatus(self.transferId,
-            TransferStatus.TRANSFERRING, size = self.flen, transferred = transferred)
 
 class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
     DELAY = 1
@@ -106,7 +122,7 @@ class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
         for chunk in stream():
             outf.write(chunk)
             crt = crt + len(chunk)
-            self.updateTransferStatus(crt)
+            self.updateTransferProgress(self.flen, crt)
             if SlowGirderDownloadTransferHandler.DELAY > 0:
                 time.sleep(SlowGirderDownloadTransferHandler.DELAY)
 
@@ -114,6 +130,7 @@ class TransferManager:
     def __init__(self, settings, pathMapper):
         self.settings = settings
         self.pathMapper = pathMapper
+        self.handlerFactory = HandlerFactory()
 
     def restartInterruptedTransfers(self):
         # transfers and item.dm.transferInProgress are not atomically
@@ -157,15 +174,24 @@ class SimpleTransferManager(TransferManager):
     def startTransfer(self, user, itemId, sessionId):
         # add transfer to transfer DB and initiate actual transfer
         transfer = Models.transferModel.createTransfer(user, itemId, sessionId)
-        self.actualStartTransfer(transfer['_id'], itemId)
+        self.actualStartTransfer(user, transfer['_id'], itemId)
 
-    def actualStartTransfer(self, transferId, itemId):
-        transferHandler = self.getTransferHandler(transferId, itemId)
+    def actualStartTransfer(self, user, transferId, itemId):
+        transferHandler = self.getTransferHandler(user, transferId, itemId)
         transferThread = TransferThread(itemId, transferHandler)
         transferThread.start()
 
     def getTransferHandler(self, transferId, itemId):
-        return GirderDownloadTransferHandler(transferId, itemId, self.pathMapper.getPSPath(itemId))
+        item = Models.itemModel.load(itemId, level = AccessType.READ, user = user)
+        psPath = self.pathMapper.getPSPath(itemId)
+        if 'meta' in item and 'phys_path' in item['meta']:
+            url = item['meta']['phys_path']
+            if not 'size' in item['meta']:
+                raise ValueError('Item ' + str(itemId) + ' must have a meta.size attribute')
+            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath)
+        else:
+            return GirderDownloadTransferHandler(transferId, itemId, psPath)
+
 
 class DelayingSimpleTransferManager(SimpleTransferManager):
     def __init__(self, settings, pathMapper):
