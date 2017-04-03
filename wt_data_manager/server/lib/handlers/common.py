@@ -1,4 +1,5 @@
-from ..transfer_manager import TransferHandler, Models, TransferStatus
+from ..tm_utils import TransferHandler, Models
+from ...constants import TransferStatus
 import os
 
 
