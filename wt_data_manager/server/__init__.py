@@ -17,7 +17,9 @@ import traceback
 @setting_utilities.validator({
     PluginSettings.PRIVATE_STORAGE_PATH,
     PluginSettings.PRIVATE_STORAGE_CAPACITY,
-    PluginSettings.GC_RUN_INTERVAL
+    PluginSettings.GC_RUN_INTERVAL,
+    PluginSettings.GC_COLLECT_START_FRACTION,
+    PluginSettings.GC_COLLECT_END_FRACTION
 })
 def validateOtherSettings(event):
     pass
