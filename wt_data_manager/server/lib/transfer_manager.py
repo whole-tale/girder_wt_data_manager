@@ -123,7 +123,7 @@ class SimpleTransferManager(TransferManager):
         self.actualStartTransfer(user, transfer['_id'], itemId)
 
     def actualStartTransfer(self, user, transferId, itemId):
-        transferHandler = self.getTransferHandler(user, transferId, itemId)
+        transferHandler = self.getTransferHandler(transferId, itemId)
         transferThread = TransferThread(itemId, transferHandler)
         transferThread.start()
 
