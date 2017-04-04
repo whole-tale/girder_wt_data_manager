@@ -1,5 +1,5 @@
-import urlparse
-from common import FileLikeUrlTransferHandler
+from six.moves.urllib.parse import urlparse
+from .common import FileLikeUrlTransferHandler
 
 
 class Local(FileLikeUrlTransferHandler):
@@ -7,5 +7,5 @@ class Local(FileLikeUrlTransferHandler):
         FileLikeUrlTransferHandler.__init__(self, url, transferId, itemId, psPath)
 
     def openInputStream(self):
-        parsedUrl = urlparse.urlparse(self.url)
+        parsedUrl = urlparse(self.url)
         return open(parsedUrl.path, 'r')

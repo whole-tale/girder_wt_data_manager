@@ -1,5 +1,5 @@
-import urllib2
-from common import FileLikeUrlTransferHandler
+from six.moves.urllib.request import urlopen
+from .common import FileLikeUrlTransferHandler
 
 
 class Http(FileLikeUrlTransferHandler):
@@ -7,4 +7,4 @@ class Http(FileLikeUrlTransferHandler):
         FileLikeUrlTransferHandler.__init__(self, url, transferId, itemId, psPath)
 
     def openInputStream(self):
-        return urllib2.urlopen(self.url)
+        return urlopen(self.url)

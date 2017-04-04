@@ -1,6 +1,6 @@
 from ..constants import TransferStatus
-from handler_factory import HandlerFactory
-from tm_utils import TransferHandler, Models
+from .handler_factory import HandlerFactory
+from .tm_utils import TransferHandler, Models
 import threading
 import time
 import os

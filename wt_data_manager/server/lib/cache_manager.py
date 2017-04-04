@@ -1,4 +1,4 @@
-from tm_utils import Models
+from .tm_utils import Models
 
 
 class CacheManager:

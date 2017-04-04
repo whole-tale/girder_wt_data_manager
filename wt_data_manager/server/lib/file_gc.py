@@ -1,4 +1,4 @@
-from tm_utils import Models
+from .tm_utils import Models
 from ..models.lock import Lock
 from ..models.psinfo import PSInfo
 from .. import constants
