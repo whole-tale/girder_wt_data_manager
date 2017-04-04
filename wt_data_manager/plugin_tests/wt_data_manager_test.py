@@ -89,3 +89,4 @@ class IntegrationTestCase(base.TestCase):
             time.sleep(0.1)
             max_iters -= 1
             item = self.reloadItem(item)
+        self.assertTrue(True, 'No file found after about 10s')
