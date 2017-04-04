@@ -42,7 +42,8 @@ def load(info):
     transfer = Transfer()
 
     pathMapper = path_mapper.PathMapper(settings)
-    transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
+    # transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
+    transferManager = transfer_manager.SimpleTransferManager(settings, pathMapper)
 
     # a GC that does nothing
     fileGC = file_gc.DummyFileGC(settings, pathMapper)
