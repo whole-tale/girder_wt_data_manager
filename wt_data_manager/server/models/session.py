@@ -17,7 +17,7 @@ class Session(AccessControlledModel):
                           fields={'_id', 'status', 'ownerId', 'dataSet', 'error'})
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
-        self.lockModel = ModelImporter.model('lock')
+        self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
 
     def validate(self, session):
         return session
