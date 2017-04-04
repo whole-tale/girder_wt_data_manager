@@ -54,7 +54,6 @@ class Transfer(AccessControlledModel):
             pathFromRoot = pathFromRoot + '/' + dict['object']['name']
         return pathFromRoot
 
-
     def setStatus(self, transferId, status, error=None, size=0, transferred=0,
                   setTransferStartTime=False, setTransferEndTime=False):
 

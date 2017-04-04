@@ -73,7 +73,6 @@ class Session(AccessControlledModel):
         if ownerId != user['_id']:
             raise AccessException('Current user is not the session owner')
 
-
     def deleteSession(self, user, session):
         self.checkOwnership(user, session)
         self.remove(session)
@@ -142,7 +141,6 @@ class Session(AccessControlledModel):
             if path.startswith(rootPath):
                 return (path[len(rootPath):], self.loadObject(str(obj['itemId'])))
         raise LookupError('No such object: ' + path)
-
 
     def loadObject(self, id):
         item = self.folderModel.load(id, level=AccessType.READ)
