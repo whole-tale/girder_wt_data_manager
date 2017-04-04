@@ -8,7 +8,6 @@ import events from 'girder/events';
 import ConfigViewTemplate from '../templates/configView.pug';
 import '../stylesheets/configView.styl';
 
-
 var ConfigView = View.extend({
     SETTING_KEYS: [
         'dm.private_storage_path',

@@ -73,7 +73,6 @@ def load(info):
 
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
 
-
     def itemLocked(event):
         dict = event.info
         print("Item locked event: " + str(dict))

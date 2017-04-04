@@ -45,7 +45,7 @@ class GirderDownloadTransferHandler(TransferHandler):
             # function that ensures that the directory exists without failing if
             # it does. Good job, python!
             pass
-        with open(self.psPath, 'w') as outf:
+        with open(self.psPath, 'wb') as outf:
             self.transferBytes(outf, stream)
 
     def transferBytes(self, outf, stream):

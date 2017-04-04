@@ -37,22 +37,20 @@ class IntegrationTestCase(base.TestCase):
                                             {'importPath': self.tmpdir}, {}, self.user,
                                             leafFoldersAsItems=False)
         self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
-        print self.gfiles
-
+        print(self.gfiles)
 
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
         path = dir + '/' + name
         f = open(path, 'w')
         s = ''.join([chr(x) for x in range(256)])
-        for i in range(size / 256):
+        for i in range(size // 256):
             f.write(s)
         f.close()
         return name
 
     def tearDown(self):
         base.TestCase.tearDown(self)
-
 
     def testLocalFile(self):
         dataSet = [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in self.gfiles]
@@ -81,11 +79,13 @@ class IntegrationTestCase(base.TestCase):
         return self.model('item').load(item['_id'], user=self.user)
 
     def waitForFile(self, item):
-        while True:
+        max_iters = 100
+        while max_iters > 0:
             if 'cached' in item['dm'] and item['dm']['cached']:
                 self.assertHasKeys(item['dm'], ['psPath'])
                 psPath = item['dm']['psPath']
                 self.assertIsNotNone(psPath)
                 return psPath
             time.sleep(0.1)
+            max_iters -= 1
             item = self.reloadItem(item)
