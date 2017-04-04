@@ -1,8 +1,6 @@
 from girder.utility.model_importer import ModelImporter
 from girder import events
 from ..constants import TransferStatus
-from ..models.transfer import Transfer
-from ..models.lock import Lock
 import traceback
 
 
@@ -10,8 +8,8 @@ class Models:
     itemModel = ModelImporter.model('item')
     fileModel = ModelImporter.model('file')
     userModel = ModelImporter.model('user')
-    transferModel = Transfer()
-    lockModel = Lock()
+    transferModel = ModelImporter.model('transfer', 'wt_data_manager')
+    lockModel = ModelImporter.model('lock', 'wt_data_manager')
 
 
 class TransferHandler:
