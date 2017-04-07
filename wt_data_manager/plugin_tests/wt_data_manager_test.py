@@ -37,7 +37,11 @@ class IntegrationTestCase(base.TestCase):
                                             {'importPath': self.tmpdir}, {}, self.user,
                                             leafFoldersAsItems=False)
         self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
-        print(self.gfiles)
+
+        self.httpItem = self.model('item').createItem('httpitem1', self.user, self.testFolder)
+        self.httpItem['size'] = 1048576
+        self.httpItem['meta'] = {'phys_path': 'http://ovh.net/files/1Mio.dat', 'size': 1048576}
+        self.model('item').save(self.httpItem)
 
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
@@ -52,11 +56,21 @@ class IntegrationTestCase(base.TestCase):
     def tearDown(self):
         base.TestCase.tearDown(self)
 
+    def makeDataSet(self, items):
+        return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
+
     def testLocalFile(self):
-        dataSet = [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in self.gfiles]
+        dataSet = self.makeDataSet(self.gfiles)
+        self._testItem(dataSet, self.gfiles[0])
+
+    def testHttpFile(self):
+        dataSet = self.makeDataSet([self.httpItem])
+        self._testItem(dataSet, self.httpItem)
+
+    def _testItem(self, dataSet, item):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
         self.assertNotEqual(session, None)
-        item = self.gfiles[0]
+
         self.assertNotHasKeys(item, ['dm'])
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
                                                                  item['_id'])
