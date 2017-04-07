@@ -11,7 +11,6 @@ from girder.utility import setting_utilities
 from girder.constants import SettingDefault
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
-import traceback
 
 
 @setting_utilities.validator({
@@ -75,11 +74,7 @@ def load(info):
 
     def itemLocked(event):
         dict = event.info
-        print("Item locked event: " + str(dict))
-        try:
-            cacheManager.itemLocked(dict['user'], dict['itemId'], dict['sessionId'])
-        except:
-            traceback.print_exc()
+        cacheManager.itemLocked(dict['user'], dict['itemId'], dict['sessionId'])
 
     def itemUnlocked(event):
         cacheManager.itemUnlocked(event.info)
