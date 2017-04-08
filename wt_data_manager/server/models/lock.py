@@ -19,6 +19,7 @@ class Lock(AccessControlledModel):
     FIELD_LOCK_COUNT = 'dm.lockCount'
     FIELD_CACHED = 'dm.cached'
     FIELD_LAST_UNLOCKED = 'dm.lastUnlocked'
+    FIELD_DOWNLOAD_COUNT = 'dm.downloadCount'
 
     def initialize(self):
         self.name = 'lock'
@@ -179,6 +180,9 @@ class Lock(AccessControlledModel):
                 '$unset': {
                     'dm.transfer.userId': True,
                     'dm.transfer.sessionId': True
+                },
+                '$inc': {
+                    Lock.FIELD_DOWNLOAD_COUNT: 1
                 }
             },
             multi=False)
