@@ -59,13 +59,21 @@ class IntegrationTestCase(base.TestCase):
     def makeDataSet(self, items):
         return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
 
-    def testLocalFile(self):
+    def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
         self._testItem(dataSet, self.gfiles[0])
 
-    def testHttpFile(self):
+    def test02HttpFile(self):
         dataSet = self.makeDataSet([self.httpItem])
         self._testItem(dataSet, self.httpItem)
+
+    def test03Caching(self):
+        dataSet = self.makeDataSet(self.gfiles)
+        self._testItem(dataSet, self.gfiles[0])
+        self._testItem(dataSet, self.gfiles[0])
+        item = self.reloadItem(self.gfiles[0])
+        self.assertEqual(item['dm']['downloadCount'], 1)
+
 
     def _testItem(self, dataSet, item):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
