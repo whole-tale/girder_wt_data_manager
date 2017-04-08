@@ -79,7 +79,6 @@ class IntegrationTestCase(base.TestCase):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
         self.assertNotEqual(session, None)
 
-        self.assertNotHasKeys(item, ['dm'])
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
                                                                  item['_id'])
         self.assertNotEqual(lock, None)
