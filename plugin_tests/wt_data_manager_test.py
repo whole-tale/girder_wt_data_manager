@@ -74,7 +74,6 @@ class IntegrationTestCase(base.TestCase):
         item = self.reloadItem(self.gfiles[0])
         self.assertEqual(item['dm']['downloadCount'], 1)
 
-
     def _testItem(self, dataSet, item):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
         self.assertNotEqual(session, None)
