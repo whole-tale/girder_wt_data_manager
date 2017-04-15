@@ -17,11 +17,33 @@ The basic flow would be something like this:
 and file information
 * On open() create a lock on the Girder item using the ``lock`` API
 * Wait until item.dm.cached is true, then use item.dm.psPath to get the
-file bytes through some means
+file bytes through some means. For convenience dm/lock/{id}/download can
+be used for this purpose.
 * Optionally monitor transfers using the ``transfer`` API
 * On close, remove the lock from the item (unless the tale is saved, in which
 case a new lock should be added, possibly in another session)
 * When the tale is removed, delete the session
+
+### Data Providers
+
+The DMS can download files to the PS in two different ways: internally or
+using the Girder download mechanism. If the Girder item contains a
+`meta.phys_path` key, the DMS tries to interpret it as a URL. If it can find
+a URL scheme, it will use that to try to instantiate one of the available
+transfer providers. If `meta.phys_path` does not contain a scheme part, the
+DMS interprets it as local path. Finally, if there is no `meta.phys_path`,
+the DMS tries to download the item to the PS using the `/file/{id}/download`
+REST call.
+
+As a side note, if `meta.phys_path` is present, the DMS also requires the
+presence of a `meta.size` attribute.
+
+It may be important to note that the DMS assumes the "one file per item" model.
+
+The currently supported URL schemes are:
+
+* `local`/`file` - local copy
+* `http` - plain http download
 
 ### Configuration
 
@@ -178,6 +200,15 @@ Example response:
 GET /dm/session/{id}
 ```
 
+Parameters:
+```
+loadObjects=
+```
+If `loadObjects` is set, then the `dataSet` will be returned with additional
+dictionary entries for each item. These entries are:
+*  ```type: ("folder" | "item")```
+* ```obj: (<folder> | <item>)```
+
 Example:
 ```
 curl -X GET --header 'Accept: application/json'\
@@ -285,6 +316,17 @@ Example response:
     ],
 }
 ```
+
+#### Get item unfiltered
+
+```
+GET /dm/session/{id}/item/{itemId}
+```
+
+Returns a Girder item, like `GET /item/{itemId}`, except it returns the full
+object, including fields that would otherwise be hidden (can this be done with
+vanilla Girder?)
+
 
 ### Locks
 
@@ -452,6 +494,16 @@ curl -X DELETE --header 'Accept: application/json'\
 ```
 
 There is no response if the call succeeds.
+
+#### Download file
+
+Downloads the item that is locked by this lock. The download is done using
+the `dm.psPath` field of the item and it requires `dm.cached` to be `true`.
+If `dm.cached` is false, calling this will most likely result in an error.
+
+```
+GET /dm/lock/{id}/download
+```
 
 ### Transfers
 
