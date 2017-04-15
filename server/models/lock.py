@@ -20,6 +20,7 @@ class Lock(AccessControlledModel):
     FIELD_CACHED = 'dm.cached'
     FIELD_LAST_UNLOCKED = 'dm.lastUnlocked'
     FIELD_DOWNLOAD_COUNT = 'dm.downloadCount'
+    FIELD_PS_PATH = 'dm.psPath'
 
     def initialize(self):
         self.name = 'lock'
@@ -163,7 +164,10 @@ class Lock(AccessControlledModel):
     def fileDeleted(self, itemId):
         self.itemModel.update(
             query={'_id': itemId},
-            update={'$set': {Lock.FIELD_CACHED: False, Lock.FIELD_DELETE_IN_PROGRESS: False}},
+            update={
+                '$set': {Lock.FIELD_CACHED: False, Lock.FIELD_DELETE_IN_PROGRESS: False},
+                '$unset': {Lock.FIELD_PS_PATH: True}
+            },
             multi=False)
 
     def fileDownloaded(self, info):
@@ -175,7 +179,7 @@ class Lock(AccessControlledModel):
                 '$set': {
                     Lock.FIELD_CACHED: True,
                     Lock.FIELD_TRANSFER_IN_PROGRESS: False,
-                    'dm.psPath': psPath
+                    Lock.FIELD_PS_PATH: psPath
                 },
                 '$unset': {
                     'dm.transfer.userId': True,
