@@ -60,7 +60,6 @@ class Session(AccessControlledModel):
 
         session = self.save(session)
 
-        print('Session ' + str(session['_id']) + ' created')
         events.trigger('dm.sessionCreated', info=session)
 
         return session

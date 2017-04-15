@@ -74,7 +74,7 @@ class Lock(AccessControlledModel):
         lock = self.save(lock)
 
         self.waitForPendingDelete(itemId)
-        print("No pending delete for " + str(itemId))
+
         if (self.tryLock(user, sessionId, itemId, ownerId)):
             # we own the transfer
             events.trigger('dm.itemLocked',
