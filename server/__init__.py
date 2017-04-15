@@ -54,7 +54,7 @@ def load(info):
     #                file_gc.LRUSortingScheme()))
     cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper)
 
-    info['apiRoot'].dm = DM(session, cacheManager)
+    info['apiRoot'].dm = DM(cacheManager)
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
     info['apiRoot'].dm.route('GET', ('session', ':id',), session.getSession)
     info['apiRoot'].dm.route('POST', ('session',), session.createSession)

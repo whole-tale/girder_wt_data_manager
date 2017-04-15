@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from girder.api.rest import Resource
+from girder.utility.model_importer import ModelImporter
 
 
 class DM(Resource):
-    def __init__(self, sessionModel, cacheManager):
+    def __init__(self, cacheManager):
         super(DM, self).__init__()
         self.resourceName = 'dm'
-        self.sessionModel = sessionModel
+        self.sessionModel = ModelImporter.model('session', 'wt_data_manager')
         self.cacheManager = cacheManager
 
     def createSession(self, user, dataSet):
