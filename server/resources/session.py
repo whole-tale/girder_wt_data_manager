@@ -32,6 +32,9 @@ class Session(Resource):
     @describeRoute(
         Description('Get a session by ID.')
         .param('id', 'The ID of the session.', paramType='path')
+        .param('loadObjects', 'If specified, the dataSet of the returned session will contain'
+                              'two additional fields for each entry: "type": "folder"|"item" '
+                              'and "obj": <itemOrFolder>', paramType='query')
         .errorResponse('ID was invalid.')
         .errorResponse('Read access was denied for the session.', 403)
     )
