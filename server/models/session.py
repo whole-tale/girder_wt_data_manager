@@ -191,7 +191,3 @@ class Session(AccessControlledModel):
             (path, tail) = os.path.split(path)
             l.insert(0, tail)
         return l
-
-    def getPrivateStoragePath(self, itemId):
-        item = self.itemModel.findOne(query={'_id': itemId}, fields=['dm.psPath'])
-        return item['dm.psPath']
