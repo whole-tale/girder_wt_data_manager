@@ -6,6 +6,7 @@ from tests import base
 import tempfile
 import time
 import os
+import cherrypy
 
 
 def setUpModule():
@@ -43,6 +44,8 @@ class IntegrationTestCase(base.TestCase):
         self.httpItem['meta'] = {'phys_path': 'http://ovh.net/files/1Mio.dat', 'size': 1048576}
         self.model('item').save(self.httpItem)
 
+        self.apiroot = cherrypy.tree.apps['/api'].root.v1
+
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
         path = dir + '/' + name
@@ -74,8 +77,21 @@ class IntegrationTestCase(base.TestCase):
         item = self.reloadItem(self.gfiles[0])
         self.assertEqual(item['dm']['downloadCount'], 1)
 
+    def test04SessionApi(self):
+        dataSet = self.makeDataSet(self.gfiles)
+        self._testSessionApi(dataSet, self.gfiles[0])
+
+    def _testSessionApi(self, dataSet, item):
+        session = self.apiroot.dm.createSession(self.user, dataSet)
+        self._testItemWithSession(session, item)
+        self.apiroot.dm.deleteSession(self.user, session=session)
+
     def _testItem(self, dataSet, item):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
+        self._testItemWithSession(session, item)
+        self.model('session', 'wt_data_manager').deleteSession(self.user, session)
+
+    def _testItemWithSession(self, session, item):
         self.assertNotEqual(session, None)
 
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
