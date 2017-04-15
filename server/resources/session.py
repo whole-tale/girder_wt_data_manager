@@ -95,11 +95,11 @@ class Session(Resource):
     @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
     @describeRoute(
         Description('Returns an unfiltered item in this session')
-            .param('id', 'The ID of the session.', paramType='path')
-            .param('itemId', 'The ID of the item.', paramType='path')
-            .errorResponse('ID was invalid.')
-            .errorResponse('Read access was denied for the session.', 403)
-            .errorResponse('Object was not found.', 401)
+        .param('id', 'The ID of the session.', paramType='path')
+        .param('itemId', 'The ID of the item.', paramType='path')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Read access was denied for the session.', 403)
+        .errorResponse('Object was not found.', 401)
     )
     def getItemUnfiltered(self, session, itemId, params):
         user = self.getCurrentUser()
