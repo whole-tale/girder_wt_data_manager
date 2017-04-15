@@ -65,6 +65,18 @@ class Session(AccessControlledModel):
 
         return session
 
+    def loadObjects(self, dataSet):
+        for entry in dataSet:
+            if 'type' in entry:
+                continue
+            folder = self.folderModel.load(entry['itemId'], force=True)
+            if folder is not None:
+                entry['type'] = 'folder'
+                entry['obj'] = folder
+            else:
+                entry['type'] = 'item'
+                entry['obj'] = self.itemModel.load(entry['itemId'], force=True)
+
     def checkOwnership(self, user, session):
         if 'ownerId' in session:
             ownerId = session['ownerId']

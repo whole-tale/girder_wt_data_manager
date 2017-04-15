@@ -37,6 +37,8 @@ class Session(Resource):
     )
     @filtermodel(model='session', plugin='wt_data_manager')
     def getSession(self, session, params):
+        if params['loadObjects'] is not None:
+            self.model('session', 'wt_data_manager').loadObjects(session['dataSet'])
         return session
 
     @access.user
@@ -85,3 +87,19 @@ class Session(Resource):
                                                                       params['path'], children)
         except LookupError as ex:
             raise RestException(ex.message, code=401)
+
+    @access.user
+    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
+    @describeRoute(
+        Description('Returns an unfiltered item in this session')
+            .param('id', 'The ID of the session.', paramType='path')
+            .param('itemId', 'The ID of the item.', paramType='path')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Read access was denied for the session.', 403)
+            .errorResponse('Object was not found.', 401)
+    )
+    def getItemUnfiltered(self, session, itemId, params):
+        user = self.getCurrentUser()
+        self.model('session', 'wt_data_manager').checkOwnership(user, session)
+        item = self.model('item').load(itemId, level=AccessType.READ, user=user)
+        return item

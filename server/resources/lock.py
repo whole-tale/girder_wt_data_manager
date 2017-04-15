@@ -8,7 +8,6 @@ from girder.constants import AccessType
 from girder.api import access
 from girder.api.describe import Description, describeRoute
 
-
 class Lock(Resource):
     def initialize(self):
         self.name = 'session'
@@ -94,3 +93,14 @@ class Lock(Resource):
         if 'ownerId' in params:
             ownerId = params['ownerId']
         return self.model('lock', 'wt_data_manager').acquireLock(user, sessionId, itemId, ownerId)
+
+    @access.user
+    @loadmodel(model='lock', plugin='wt_data_manager', level=AccessType.READ)
+    @describeRoute(
+        Description('Download the item locked by a lock.')
+            .param('id', 'The ID of the lock.', paramType='path')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Access was denied for the lock.', 403)
+    )
+    def downloadItem(self, lock, params):
+        return self.model('lock', 'wt_data_manager').downloadItem(lock)

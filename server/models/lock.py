@@ -22,6 +22,8 @@ class Lock(AccessControlledModel):
     FIELD_DOWNLOAD_COUNT = 'dm.downloadCount'
     FIELD_PS_PATH = 'dm.psPath'
 
+    DOWNLOAD_BUF_SIZE = 65536
+
     def initialize(self):
         self.name = 'lock'
         self.exposeFields(level=AccessType.READ, fields={'_id', 'userId', 'sessionId', 'itemId',
@@ -199,3 +201,21 @@ class Lock(AccessControlledModel):
             Lock.FIELD_CACHED: True,
             Lock.FIELD_LOCK_COUNT: 0
         })
+
+    def downloadItem(self, lock):
+        item = self.itemModel.findOne({'_id': lock['itemId']})
+        if item is None:
+            raise ValueError('Internal error: unable to find item for lock')
+        if not item['dm']['cached']:
+            raise ValueError('Item is not available yet')
+        psPath = item['dm']['psPath']
+
+        def stream():
+            with open(psPath, 'rb') as f:
+                while True:
+                    data = f.read(Lock.DOWNLOAD_BUF_SIZE)
+                    if not data:
+                        break
+                    yield data
+
+        return stream

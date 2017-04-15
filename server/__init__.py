@@ -64,11 +64,14 @@ def load(info):
     info['apiRoot'].dm.route('DELETE', ('lock', ':id'), lock.releaseLock)
     info['apiRoot'].dm.route('GET', ('lock', ':id'), lock.getLock)
     info['apiRoot'].dm.route('GET', ('lock',), lock.listLocks)
+    info['apiRoot'].dm.route('GET', ('lock', ':id', 'download'), lock.downloadItem)
 
     info['apiRoot'].dm.route('GET', ('session', ':id', 'object'), session.getObject)
     info['apiRoot'].dm.route('GET', ('session', ':id', 'lock',), lock.listLocksForSession)
     info['apiRoot'].dm.route('GET', ('session', ':id', 'transfer'),
                              transfer.listTransfersForSession)
+    info['apiRoot'].dm.route('GET', ('session', ':id', 'item', ':itemId'),
+                             session.getItemUnfiltered)
 
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
 
