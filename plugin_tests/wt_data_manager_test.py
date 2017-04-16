@@ -64,7 +64,7 @@ class IntegrationTestCase(base.TestCase):
 
     def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
-        self._testItem(dataSet, self.gfiles[0])
+        self._testItem(dataSet, self.gfiles[0], True)
 
     def test02HttpFile(self):
         dataSet = self.makeDataSet([self.httpItem])
@@ -73,35 +73,55 @@ class IntegrationTestCase(base.TestCase):
     def test03Caching(self):
         dataSet = self.makeDataSet(self.gfiles)
         self._testItem(dataSet, self.gfiles[0])
-        self._testItem(dataSet, self.gfiles[0])
+        self._testItem(dataSet, self.gfiles[0], transferCount=1)
         item = self.reloadItem(self.gfiles[0])
         self.assertEqual(item['dm']['downloadCount'], 1)
+        self._testItem(dataSet, self.gfiles[1], transferCount=2)
 
     def test04SessionApi(self):
         dataSet = self.makeDataSet(self.gfiles)
         self._testSessionApi(dataSet, self.gfiles[0])
 
+    def test05SessionDeleteById(self):
+        dataSet = self.makeDataSet(self.gfiles)
+        session = self.apiroot.dm.createSession(self.user, dataSet)
+        self.apiroot.dm.deleteSession(self.user, sessionId=session['_id'])
+
     def _testSessionApi(self, dataSet, item):
         session = self.apiroot.dm.createSession(self.user, dataSet)
+        sessions = list(self.model('session', 'wt_data_manager').list(self.user))
+        self.assertEqual(len(sessions), 1)
         self._testItemWithSession(session, item)
         self.apiroot.dm.deleteSession(self.user, session=session)
 
-    def _testItem(self, dataSet, item):
+    def _testItem(self, dataSet, item, download=False, transferCount=-1):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
-        self._testItemWithSession(session, item)
+        self._testItemWithSession(session, item, download=download, transferCount=transferCount)
         self.model('session', 'wt_data_manager').deleteSession(self.user, session)
 
-    def _testItemWithSession(self, session, item):
+    def _testItemWithSession(self, session, item, download=False, transferCount=-1):
         self.assertNotEqual(session, None)
 
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
                                                                  item['_id'])
+
+        locks = list(self.model('lock', 'wt_data_manager').listLocks(self.user, session['_id']))
+        self.assertEqual(len(locks), 1)
+
         self.assertNotEqual(lock, None)
 
         item = self.reloadItem(item)
         self.assertHasKeys(item, ['dm'])
 
         psPath = self.waitForFile(item)
+
+        if transferCount > 0:
+            transfers = self.model('transfer', 'wt_data_manager').list(self.user, discardOld=False)
+            transfers = list(transfers)
+            self.assertEqual(len(transfers), transferCount)
+
+        if download:
+            self._downloadFile(lock, item)
 
         self.assertTrue(os.path.isfile(psPath))
         self.assertEqual(os.path.getsize(psPath), item['size'])
@@ -110,6 +130,13 @@ class IntegrationTestCase(base.TestCase):
 
         item = self.reloadItem(item)
         self.assertEqual(item['dm']['lockCount'], 0)
+
+    def _downloadFile(self, lock, item):
+        stream = self.model('lock', 'wt_data_manager').downloadItem(lock)
+        sz = 0
+        for chunk in stream():
+            sz += len(chunk)
+        self.assertEqual(sz, item['size'])
 
     def reloadItem(self, item):
         return self.model('item').load(item['_id'], user=self.user)
