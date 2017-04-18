@@ -39,10 +39,16 @@ class IntegrationTestCase(base.TestCase):
                                             leafFoldersAsItems=False)
         self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
 
-        self.httpItem = self.model('item').createItem('httpitem1', self.user, self.testFolder)
-        self.httpItem['size'] = 1048576
-        self.httpItem['meta'] = {'phys_path': 'http://ovh.net/files/1Mio.dat', 'size': 1048576}
-        self.model('item').save(self.httpItem)
+        params = {
+            'parentType': 'folder',
+            'parentId': self.testFolder['_id'],
+            'name': 'httpitem1',
+            'linkUrl': 'http://ovh.net/files/1Mio.dat',
+            'size': 1048576
+        }
+        resp = self.request(path='/file', method='POST', user=self.user, params=params)
+        self.assertStatusOk(resp)
+        self.httpItem = self.model('item').load(resp.json['itemId'], user=self.user)
 
         self.apiroot = cherrypy.tree.apps['/api'].root.v1
 
@@ -101,7 +107,6 @@ class IntegrationTestCase(base.TestCase):
 
     def _testItemWithSession(self, session, item, download=False, transferCount=-1):
         self.assertNotEqual(session, None)
-
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
                                                                  item['_id'])
 
