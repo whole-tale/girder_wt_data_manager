@@ -5,6 +5,9 @@ import threading
 import time
 import os
 import traceback
+from girder.utility import assetstore_utilities
+from girder.utility.model_importer import ModelImporter
+from girder.models.model_base import ValidationException
 
 
 class TransferThread(threading.Thread):
@@ -27,14 +30,9 @@ class GirderDownloadTransferHandler(TransferHandler):
         TransferHandler.__init__(self, transferId, itemId, psPath)
 
     def transfer(self):
-        files = list(Models.itemModel.childFiles(item=self.item))
-        if len(files) != 1:
-            raise Exception('Wrong number of files for item ' + str(self.itemId) + ': ' +
-                            str(len(files)))
-        fileId = files[0]['_id']
+        file = self._getFileFromItem()
         Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,
                                        size=self.flen, transferred=0, setTransferStartTime=True)
-        file = Models.fileModel.load(fileId, force=True)
         stream = Models.fileModel.download(file, headers=False)
 
         try:
@@ -130,10 +128,30 @@ class SimpleTransferManager(TransferManager):
     def getTransferHandler(self, transferId, itemId):
         item = Models.itemModel.load(itemId, force=True)
         psPath = self.pathMapper.getPSPath(itemId)
-        if 'meta' in item and 'phys_path' in item['meta']:
-            url = item['meta']['phys_path']
-            if 'size' not in item['meta']:
-                raise ValueError('Item ' + str(itemId) + ' must have a meta.size attribute')
+        files = list(Models.itemModel.childFiles(item=item))
+        if len(files) != 1:
+            raise Exception('Wrong number of files for item ' + str(item['_id']) +
+                            ': ' + str(len(files)))
+        file = Models.fileModel.load(files[0]['_id'], force=True)
+
+        url = None
+        if 'linkUrl' in file:
+            url = file['linkUrl']
+        elif 'imported' in file:
+            url = file['path']
+        elif 'assetstoreId' in file:
+            try:
+                store = \
+                    ModelImporter.model('assetstore').load(file['assetstoreId'])
+                adapter = assetstore_utilities.getAssetstoreAdapter(store)
+                url = adapter.fullPath(file)
+            except ValidationException:
+                pass
+        if url:
+            try:
+                file['size']
+            except KeyError:
+                raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
             return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath)
         else:
             return GirderDownloadTransferHandler(transferId, itemId, psPath)

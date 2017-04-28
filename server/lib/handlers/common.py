@@ -7,7 +7,7 @@ class UrlTransferHandler(TransferHandler):
     def __init__(self, url, transferId, itemId, psPath):
         TransferHandler.__init__(self, transferId, itemId, psPath)
         self.url = url
-        self.flen = self.item['meta']['size']
+        self.flen = self._getFileFromItem()['size']
 
     def mkdirs(self):
         try:
