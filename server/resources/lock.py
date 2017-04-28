@@ -11,7 +11,7 @@ from girder.api.describe import Description, describeRoute
 
 class Lock(Resource):
     def initialize(self):
-        self.name = 'session'
+        self.name = 'lock'
         self.exposeFields(level=AccessType.READ,
                           fields={'_id', 'userId', 'sessionId', 'itemId', 'ownerId'})
 
