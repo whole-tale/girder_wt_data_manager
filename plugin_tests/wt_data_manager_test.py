@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 from tests import base
 import tempfile
 import time
@@ -171,55 +170,105 @@ class IntegrationTestCase(base.TestCase):
     def test06resources(self):
         dataSet = self.makeDataSet(self.gfiles, objectids=False)
 
-        resp = self.request(path='/dm/session', method='POST', user=self.user, params={
+        resp = self.request('/dm/session', method='POST', user=self.user, params={
             'dataSet': json.dumps(dataSet)
         })
         self.assertStatusOk(resp)
         sessionId = resp.json['_id']
 
+        # list sessions
+        resp = self.request('/dm/session', method='GET', user=self.user)
+        self.assertStatusOk(resp)
+
+        # get session
+        resp = self.request('/dm/session/%s' % sessionId, method='GET', user=self.user, params={
+            'loadObjects': 'true'
+        })
+        self.assertStatusOk(resp)
+        self.assertEqual(sessionId, str(resp.json['_id']))
+
+
         item = self.gfiles[0]
-        resp = self.request(path='/dm/lock', method='POST', user=self.user, params={
+
+        # This coverage business, as implemented, is wrong really. Both branches of
+        # a condition should be tested, including a failing condition with no else block.
+        resp = self.request('/dm/lock', method='POST', user=self.user, params={
             'sessionId': sessionId,
-            'itemId': str(item['_id'])
+            'itemId': str(item['_id']),
+            'ownerId': str(self.user['_id'])
         })
         self.assertStatusOk(resp)
         lockId = resp.json['_id']
 
-        resp = self.request(path='/dm/lock', method='GET', user=self.user, params={
+        resp = self.request('/dm/lock', method='GET', user=self.user, params={
             'sessionId': sessionId
         })
         self.assertStatusOk(resp)
         locks = resp.json
         self.assertEqual(len(locks), 1)
 
+        # test list locks with params
+        resp = self.request('/dm/lock', method='GET', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item['_id']),
+            'ownerId': str(self.user['_id'])
+        })
+        self.assertStatusOk(resp)
+
+        # test list locks for session
+        resp = self.request('/dm/session/%s/lock' % sessionId, method='GET', user=self.user)
+        self.assertStatusOk(resp)
+
+        # test get lock
+        resp = self.request('/dm/lock/%s' % lockId, method='GET', user=self.user)
+        self.assertStatusOk(resp)
+        self.assertEqual(lockId, str(resp.json['_id']))
+
         item = self.reloadItemRest(sessionId, item)
 
         self.assertHasKeys(item, ['dm'])
 
         psPath = self.waitForFile(item, rest=True, sessionId=sessionId)
+        shouldHaveBeenTransferred = psPath in self.transferredFiles
         self.transferredFiles.add(psPath)
 
         resp = self.request('/dm/transfer', method='GET', user=self.user, params={
+            'sessionId': sessionId,
             'discardOld': 'false'
         })
         self.assertStatusOk(resp)
         transfers = resp.json
         self.assertEqual(len(transfers), len(self.transferredFiles))
 
+        # test list transfers for session
+        resp = self.request('/dm/session/%s/transfer' % sessionId, method='GET', user=self.user)
+        self.assertStatusOk(resp)
+        transfers = resp.json
+        if shouldHaveBeenTransferred:
+            self.assertEqual(len(transfers), 1)
+        else:
+            self.assertEqual(len(transfers), 0)
+
         self.assertTrue(os.path.isfile(psPath))
         self.assertEqual(os.path.getsize(psPath), item['size'])
 
-        resp = self.request(path='/dm/lock/%s' % lockId, method='DELETE', user=self.user)
+        resp = self.request('/dm/lock/%s/download' % lockId, method='GET', user=self.user,
+                            isJson=False)
+        self.assertStatusOk(resp)
+        body = self.getBody(resp, text=False)
+        self.assertEqual(len(body), item['size'])
+
+        resp = self.request('/dm/lock/%s' % lockId, method='DELETE', user=self.user)
         self.assertStatusOk(resp)
 
         item = self.reloadItemRest(sessionId, item)
         self.assertEqual(item['dm']['lockCount'], 0)
 
-        resp = self.request(path='/dm/session/%s' % sessionId, method='DELETE', user=self.user)
+        resp = self.request('/dm/session/%s' % sessionId, method='DELETE', user=self.user)
         self.assertStatusOk(resp)
 
     def reloadItemRest(self, sessionId, item):
-        resp = self.request(path='/dm/session/%s/item/%s' % (sessionId, item['_id']), method='GET',
+        resp = self.request('/dm/session/%s/item/%s' % (sessionId, item['_id']), method='GET',
                             user=self.user)
         self.assertStatusOk(resp)
         return resp.json
