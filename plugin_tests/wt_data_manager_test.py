@@ -7,6 +7,7 @@ import tempfile
 import time
 import os
 import cherrypy
+import json
 
 
 def setUpModule():
@@ -46,6 +47,8 @@ class IntegrationTestCase(base.TestCase):
 
         self.apiroot = cherrypy.tree.apps['/api'].root.v1
 
+        self.transferredFiles = set()
+
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
         path = dir + '/' + name
@@ -59,8 +62,11 @@ class IntegrationTestCase(base.TestCase):
     def tearDown(self):
         base.TestCase.tearDown(self)
 
-    def makeDataSet(self, items):
-        return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
+    def makeDataSet(self, items, objectids=True):
+        if objectids:
+            return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
+        else:
+            return [{'itemId': str(f['_id']), 'mountPoint': '/' + f['name']} for f in items]
 
     def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
@@ -73,10 +79,10 @@ class IntegrationTestCase(base.TestCase):
     def test03Caching(self):
         dataSet = self.makeDataSet(self.gfiles)
         self._testItem(dataSet, self.gfiles[0])
-        self._testItem(dataSet, self.gfiles[0], transferCount=1)
+        self._testItem(dataSet, self.gfiles[0])
         item = self.reloadItem(self.gfiles[0])
         self.assertEqual(item['dm']['downloadCount'], 1)
-        self._testItem(dataSet, self.gfiles[1], transferCount=2)
+        self._testItem(dataSet, self.gfiles[1])
 
     def test04SessionApi(self):
         dataSet = self.makeDataSet(self.gfiles)
@@ -94,12 +100,12 @@ class IntegrationTestCase(base.TestCase):
         self._testItemWithSession(session, item)
         self.apiroot.dm.deleteSession(self.user, session=session)
 
-    def _testItem(self, dataSet, item, download=False, transferCount=-1):
+    def _testItem(self, dataSet, item, download=False):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
-        self._testItemWithSession(session, item, download=download, transferCount=transferCount)
+        self._testItemWithSession(session, item, download=download)
         self.model('session', 'wt_data_manager').deleteSession(self.user, session)
 
-    def _testItemWithSession(self, session, item, download=False, transferCount=-1):
+    def _testItemWithSession(self, session, item, download=False):
         self.assertNotEqual(session, None)
 
         lock = self.model('lock', 'wt_data_manager').acquireLock(self.user, session['_id'],
@@ -114,11 +120,11 @@ class IntegrationTestCase(base.TestCase):
         self.assertHasKeys(item, ['dm'])
 
         psPath = self.waitForFile(item)
+        self.transferredFiles.add(psPath)
 
-        if transferCount > 0:
-            transfers = self.model('transfer', 'wt_data_manager').list(self.user, discardOld=False)
-            transfers = list(transfers)
-            self.assertEqual(len(transfers), transferCount)
+        transfers = self.model('transfer', 'wt_data_manager').list(self.user, discardOld=False)
+        transfers = list(transfers)
+        self.assertEqual(len(transfers), len(self.transferredFiles))
 
         if download:
             self._downloadFile(lock, item)
@@ -141,7 +147,7 @@ class IntegrationTestCase(base.TestCase):
     def reloadItem(self, item):
         return self.model('item').load(item['_id'], user=self.user)
 
-    def waitForFile(self, item):
+    def waitForFile(self, item, rest=False, sessionId=None):
         max_iters = 100
         while max_iters > 0:
             if 'cached' in item['dm'] and item['dm']['cached']:
@@ -151,5 +157,64 @@ class IntegrationTestCase(base.TestCase):
                 return psPath
             time.sleep(0.1)
             max_iters -= 1
-            item = self.reloadItem(item)
+            if rest:
+                item = self.reloadItemRest(sessionId, item)
+            else:
+                item = self.reloadItem(item)
         self.assertTrue(True, 'No file found after about 10s')
+
+    def test06resources(self):
+        dataSet = self.makeDataSet(self.gfiles, objectids=False)
+
+        resp = self.request(path='/dm/session', method='POST', user=self.user, params={
+            'dataSet': json.dumps(dataSet)
+        })
+        self.assertStatusOk(resp)
+        sessionId = resp.json['_id']
+
+        item = self.gfiles[0]
+        resp = self.request(path='/dm/lock', method='POST', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item['_id'])
+        })
+        self.assertStatusOk(resp)
+        lockId = resp.json['_id']
+
+        resp = self.request(path='/dm/lock', method='GET', user=self.user, params={
+            'sessionId': sessionId
+        })
+        self.assertStatusOk(resp)
+        locks = resp.json
+        self.assertEqual(len(locks), 1)
+
+        item = self.reloadItemRest(sessionId, item)
+
+        self.assertHasKeys(item, ['dm'])
+
+        psPath = self.waitForFile(item, rest=True, sessionId=sessionId)
+        self.transferredFiles.add(psPath)
+
+        resp = self.request('/dm/transfer', method='GET', user=self.user, params={
+            'discardOld': 'false'
+        })
+        self.assertStatusOk(resp)
+        transfers = resp.json
+        self.assertEqual(len(transfers), len(self.transferredFiles))
+
+        self.assertTrue(os.path.isfile(psPath))
+        self.assertEqual(os.path.getsize(psPath), item['size'])
+
+        resp = self.request(path='/dm/lock/%s' % lockId, method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
+
+        item = self.reloadItemRest(sessionId, item)
+        self.assertEqual(item['dm']['lockCount'], 0)
+
+        resp = self.request(path='/dm/session/%s' % sessionId, method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
+
+    def reloadItemRest(self, sessionId, item):
+        resp = self.request(path='/dm/session/%s/item/%s' % (sessionId, item['_id']), method='GET',
+                            user=self.user)
+        self.assertStatusOk(resp)
+        return resp.json
