@@ -40,7 +40,7 @@ class Session(Resource):
     )
     @filtermodel(model='session', plugin='wt_data_manager')
     def getSession(self, session, params):
-        if params['loadObjects'] is not None:
+        if 'loadObjects' in params:
             self.model('session', 'wt_data_manager').loadObjects(session['dataSet'])
         return session
 

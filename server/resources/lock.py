@@ -44,7 +44,7 @@ class Lock(Resource):
                                                                     itemId=itemId, ownerId=ownerId))
 
     @access.user
-    @loadmodel(model='session', plugin='wt_data_manager')
+    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
     @filtermodel(model='lock', plugin='wt_data_manager')
     @describeRoute(
         Description('List locks for a given user.')

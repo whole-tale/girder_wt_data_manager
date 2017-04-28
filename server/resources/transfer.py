@@ -42,7 +42,7 @@ class Transfer(Resource):
                                                                    discardOld=discardOld))
 
     @access.user
-    @loadmodel(model='session', plugin='wt_data_manager')
+    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
     @filtermodel(model='transfer', plugin='wt_data_manager')
     @describeRoute(
         Description('List transfers for a given user and session.')
