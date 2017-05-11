@@ -8,6 +8,8 @@ import os
 import cherrypy
 import json
 
+from httpserver import Server
+
 
 def setUpModule():
     base.enabledPlugins.append('wt_data_manager')
@@ -22,6 +24,8 @@ class IntegrationTestCase(base.TestCase):
     def setUp(self):
         base.TestCase.setUp(self)
 
+        self.testServer = Server()
+        self.testServer.start()
         self.user = self.model('user').createUser('wt-dm-test-user', 'password', 'Joe', 'User',
                                                   'juser@example.com')
         self.testCollection = \
@@ -43,7 +47,7 @@ class IntegrationTestCase(base.TestCase):
             'parentType': 'folder',
             'parentId': self.testFolder['_id'],
             'name': 'httpitem1',
-            'linkUrl': 'http://ovh.net/files/1Mio.dat',
+            'linkUrl': self.testServer.getUrl() + '/1M',
             'size': 1048576
         }
         resp = self.request(path='/file', method='POST', user=self.user, params=params)
@@ -65,6 +69,7 @@ class IntegrationTestCase(base.TestCase):
         return name
 
     def tearDown(self):
+        self.testServer.stop()
         base.TestCase.tearDown(self)
 
     def makeDataSet(self, items, objectids=True):
