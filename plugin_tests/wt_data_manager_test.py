@@ -87,6 +87,7 @@ class IntegrationTestCase(base.TestCase):
     def test02HttpFile(self):
         self.testServer = Server()
         self.testServer.start()
+        self.assertEqual('just testing', self.testServer.getUrl())
         self.createHttpFile()
         dataSet = self.makeDataSet([self.httpItem])
         self._testItem(dataSet, self.httpItem)
