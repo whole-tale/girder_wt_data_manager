@@ -8,7 +8,6 @@ import os
 import cherrypy
 import json
 from httpserver import Server
-from six.moves.urllib.request import urlopen
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
 
@@ -164,7 +163,7 @@ class IntegrationTestCase(base.TestCase):
         return self.model('item').load(item['_id'], user=self.user)
 
     def waitForFile(self, item, rest=False, sessionId=None):
-        max_iters = 100
+        max_iters = 300
         while max_iters > 0:
             if 'cached' in item['dm'] and item['dm']['cached']:
                 self.assertHasKeys(item['dm'], ['psPath'])

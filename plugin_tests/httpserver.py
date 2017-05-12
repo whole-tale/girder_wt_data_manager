@@ -10,6 +10,8 @@ MULTIPLIERS = {
     'G': 1024 * 1024 * 1024
 }
 
+BUFLEN = 256
+
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -34,8 +36,18 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', mimetype)
             self.end_headers()
-            for i in range(szm):
-                self.wfile.write(chr(i % 256))
+
+            buf = ''
+            for i in range(BUFLEN):
+                buf += chr(i % 256)
+
+            while szm > BUFLEN:
+                self.wfile.write(buf)
+                szm -= BUFLEN
+
+            if szm > 0:
+                self.wfile.write(buf[:szm])
+
             return
 
         except IOError as ex:
