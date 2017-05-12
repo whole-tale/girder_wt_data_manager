@@ -21,3 +21,6 @@ class DM(Resource):
                 raise ValueError('One of sessionId or session must be non-null')
             session = self.sessionModel.load(sessionId, user=user)
         self.sessionModel.deleteSession(user, session)
+
+    def getFileGC(self):
+        return self.cacheManager.fileGC
