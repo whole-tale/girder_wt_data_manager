@@ -45,6 +45,7 @@ class Handler(BaseHTTPRequestHandler):
 class Server(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self, name='HTTP Fake Data Server')
+        self.daemon = True
 
     def start(self):
         self.server = HTTPServer(('', 0), Handler)
