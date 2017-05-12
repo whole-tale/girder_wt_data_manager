@@ -176,7 +176,7 @@ class IntegrationTestCase(base.TestCase):
                 item = self.reloadItemRest(sessionId, item)
             else:
                 item = self.reloadItem(item)
-        self.assertTrue(False, 'No file found after about 10s')
+        self.assertTrue(False, 'No file found after about 30s')
 
     def test06resources(self):
         dataSet = self.makeDataSet(self.gfiles, objectids=False)
