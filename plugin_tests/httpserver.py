@@ -16,19 +16,19 @@ class Handler(BaseHTTPRequestHandler):
         try:
             szMatch = re.search('[0-9]+', self.path)
             if not szMatch:
-                raise IOError()
+                raise IOError('size pattern not found')
 
             szStr = szMatch.group()
             unit = self.path[len(szStr) + 1:]
             sz = int(szStr)
 
             if unit not in MULTIPLIERS:
-                raise IOError()
+                raise IOError('no such unit %s' % unit)
             multiplier = MULTIPLIERS[unit]
 
             szm = sz * multiplier
 
-            print("Got request for %s x %s (%s)" % (sz, unit, szm))
+            print('Got request for %s x %s (%s)' % (sz, unit, szm))
             mimetype = 'application/octet-stream'
 
             self.send_response(200)
@@ -38,8 +38,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(chr(i % 256))
             return
 
-        except IOError:
-            self.send_error(404, 'File Not Found: %s' % self.path)
+        except IOError as ex:
+            self.send_error(404, 'File Not Found: %s (%s)' % (self.path, ex.message))
 
 
 class Server(threading.Thread):
