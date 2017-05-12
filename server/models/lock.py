@@ -197,7 +197,7 @@ class Lock(AccessControlledModel):
         return self.itemModel.find(query={Lock.FIELD_TRANSFER_IN_PROGRESS: True})
 
     def getCollectionCandidates(self):
-        return self.find(query={
+        return self.itemModel.find(query={
             Lock.FIELD_CACHED: True,
             Lock.FIELD_LOCK_COUNT: 0
         })
