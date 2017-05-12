@@ -47,11 +47,12 @@ def load(info):
     transferManager = transfer_manager.SimpleTransferManager(settings, pathMapper)
 
     # a GC that does nothing
-    fileGC = file_gc.DummyFileGC(settings, pathMapper)
-    # fileGC = file_gc.PeriodicFileGC(settings, pathMapper,
-    #            file_gc.CollectionStrategy(
-    #                file_gc.FractionalCollectionThresholds(settings),
-    #                file_gc.LRUSortingScheme()))
+    # fileGC = file_gc.DummyFileGC(settings, pathMapper)
+
+    fileGC = file_gc.PeriodicFileGC(settings, pathMapper,  # noqa E128
+                file_gc.CollectionStrategy(
+                   file_gc.FractionalCollectionThresholds(settings),
+                   file_gc.LRUSortingScheme()))
     cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper)
 
     info['apiRoot'].dm = DM(cacheManager)
