@@ -61,11 +61,9 @@ class CollectorThread(Thread):
 
 class PeriodicFileGC(FileGC):
     def __init__(self, settings, pathMapper, collectionStrategy):
-
-        FileGC.__init__(self, pathMapper)
+        FileGC.__init__(self, settings, pathMapper)
         self.collectionStrategy = collectionStrategy
         self.psInfo = PSInfo()
-        self.settings = settings
         self.thread = CollectorThread(settings, self)
         self.thread.start()
 
