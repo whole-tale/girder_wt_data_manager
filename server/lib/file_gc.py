@@ -97,7 +97,7 @@ class PeriodicFileGC(FileGC):
             self.psInfo.totalSize(), self.psInfo.sizeUsed())
 
     def getCollectionCandidates(self):
-        return self.lockModel.getCollectionCandidates()
+        return list(self.lockModel.getCollectionCandidates())
 
     def fileSize(self, item):
         return item['size']
