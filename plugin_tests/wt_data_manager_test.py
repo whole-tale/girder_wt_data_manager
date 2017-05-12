@@ -7,8 +7,12 @@ import time
 import os
 import cherrypy
 import json
-
 from httpserver import Server
+# oh, boy; you'd think we've learned from #include...
+# from plugins.wt_data_manager.server.constants import PluginSettings
+
+
+MB = 1024 * 1024
 
 
 def setUpModule():
@@ -24,8 +28,6 @@ class IntegrationTestCase(base.TestCase):
     def setUp(self):
         base.TestCase.setUp(self)
 
-        self.testServer = Server()
-        self.testServer.start()
         self.user = self.model('user').createUser('wt-dm-test-user', 'password', 'Joe', 'User',
                                                   'juser@example.com')
         self.testCollection = \
@@ -36,27 +38,28 @@ class IntegrationTestCase(base.TestCase):
                                               parentType='collection')
 
         self.tmpdir = tempfile.mkdtemp()
-        self.files = [self.createFile(n, 1024 * 1024 * n, self.tmpdir) for n in range(1, 5)]
+        self.files = [self.createFile(n, 1 * MB, self.tmpdir) for n in range(1, 5)]
         self.assetstore = list(self.model('assetstore').find({}))[0]
         self.model('assetstore').importData(self.assetstore, self.testFolder, 'folder',
                                             {'importPath': self.tmpdir}, {}, self.user,
                                             leafFoldersAsItems=False)
         self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
 
+        self.apiroot = cherrypy.tree.apps['/api'].root.v1
+
+        self.transferredFiles = set()
+
+    def createHttpFile(self):
         params = {
             'parentType': 'folder',
             'parentId': self.testFolder['_id'],
             'name': 'httpitem1',
             'linkUrl': self.testServer.getUrl() + '/1M',
-            'size': 1048576
+            'size': MB
         }
         resp = self.request(path='/file', method='POST', user=self.user, params=params)
         self.assertStatusOk(resp)
         self.httpItem = self.model('item').load(resp.json['itemId'], user=self.user)
-
-        self.apiroot = cherrypy.tree.apps['/api'].root.v1
-
-        self.transferredFiles = set()
 
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
@@ -69,7 +72,6 @@ class IntegrationTestCase(base.TestCase):
         return name
 
     def tearDown(self):
-        self.testServer.stop()
         base.TestCase.tearDown(self)
 
     def makeDataSet(self, items, objectids=True):
@@ -83,8 +85,12 @@ class IntegrationTestCase(base.TestCase):
         self._testItem(dataSet, self.gfiles[0], True)
 
     def test02HttpFile(self):
+        self.testServer = Server()
+        self.testServer.start()
+        self.createHttpFile()
         dataSet = self.makeDataSet([self.httpItem])
         self._testItem(dataSet, self.httpItem)
+        self.testServer.stop()
 
     def test03Caching(self):
         dataSet = self.makeDataSet(self.gfiles)
@@ -277,3 +283,35 @@ class IntegrationTestCase(base.TestCase):
                             user=self.user)
         self.assertStatusOk(resp)
         return resp.json
+
+    def test07FileGC(self):
+        gc = self.apiroot.dm.getFileGC()
+        gc.pause()
+
+        dataSet = self.makeDataSet(self.gfiles)
+        self._testItem(dataSet, self.gfiles[0])
+        self._testItem(dataSet, self.gfiles[1])
+
+        cachedItems = self._getCachedItems()
+        self.assertEqual(2, len(cachedItems))
+
+        files = [x['dm']['psPath'] for x in cachedItems]
+
+        self.model('setting').set('dm.private_storage_capacity', int(2.2 * MB))
+        self.model('setting').set('dm.gc_collect_start_fraction', 0.5)  # if over 1.1 MB
+        self.model('setting').set('dm.gc_collect_end_fraction', 0.5)   # if under 1.1 MB
+
+        gc._collect()
+        # should have cleaned one file
+        remainingCount = 0
+        for f in files:
+            if os.path.exists(f):
+                remainingCount += 1
+
+        self.assertEqual(1, remainingCount)
+        self.assertEqual(1, len(self._getCachedItems()))
+        gc.resume()
+
+
+    def _getCachedItems(self):
+        return list(self.model('item').find({'dm.cached': True}, user=self.user))
