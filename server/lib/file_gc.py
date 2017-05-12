@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 from .tm_utils import Models
 from ..models.lock import Lock
 from ..models.psinfo import PSInfo
@@ -5,6 +7,7 @@ from .. import constants
 import os
 import time
 import datetime
+import threading
 from threading import Thread
 from girder import logger
 
@@ -31,6 +34,12 @@ class FileGC():
             return False
 
     def unreacheable(self, itemId):
+        pass
+
+    def pause(self):
+        pass
+
+    def resume(self):
         pass
 
 
@@ -66,8 +75,16 @@ class PeriodicFileGC(FileGC):
         self.psInfo = PSInfo()
         self.thread = CollectorThread(settings, self)
         self.thread.start()
+        self.paused = False
+        self.collectLock = threading.Lock()
 
     def collect(self):
+        with self.collectLock:
+            if self.paused:
+                return
+            self._collect()
+
+    def _collect(self):
         # If total used space is over some collectThreshold, possibly a percentage of total space:
         #   - List all items that are cached and not locked.
         #   - Then sort them according to the collectionStrategy
@@ -114,6 +131,13 @@ class PeriodicFileGC(FileGC):
 
     def updateUsedSpace(self, used):
         self.psInfo.updateInfo(used)
+
+    def pause(self):
+        with self.collectLock:
+            self.paused = True
+
+    def resume(self):
+        self.paused = False
 
 
 class CollectionStrategy:
