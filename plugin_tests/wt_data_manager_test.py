@@ -88,9 +88,6 @@ class IntegrationTestCase(base.TestCase):
     def test02HttpFile(self):
         self.testServer = Server()
         self.testServer.start()
-        stream = urlopen(self.testServer.getUrl() + '/1M')
-        str = stream.read(10)
-        stream.close()
         self.createHttpFile()
         dataSet = self.makeDataSet([self.httpItem])
         self._testItem(dataSet, self.httpItem)
@@ -180,7 +177,7 @@ class IntegrationTestCase(base.TestCase):
                 item = self.reloadItemRest(sessionId, item)
             else:
                 item = self.reloadItem(item)
-        self.assertTrue(True, 'No file found after about 10s')
+        self.assertTrue(False, 'No file found after about 10s')
 
     def test06resources(self):
         dataSet = self.makeDataSet(self.gfiles, objectids=False)
