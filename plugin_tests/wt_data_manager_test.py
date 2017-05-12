@@ -8,6 +8,7 @@ import os
 import cherrypy
 import json
 from httpserver import Server
+from six.moves.urllib.request import urlopen
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
 
@@ -87,7 +88,9 @@ class IntegrationTestCase(base.TestCase):
     def test02HttpFile(self):
         self.testServer = Server()
         self.testServer.start()
-        self.assertEqual('just testing', self.testServer.getUrl())
+        stream = urlopen(self.testServer.getUrl() + '/1M')
+        str = stream.read(10)
+        stream.close()
         self.createHttpFile()
         dataSet = self.makeDataSet([self.httpItem])
         self._testItem(dataSet, self.httpItem)
