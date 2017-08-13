@@ -81,6 +81,9 @@ def load(info):
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'raw'), fs.getRawObject)
     info['apiRoot'].dm.route('PUT', ('fs', ':id', 'setProperties'), fs.setProperties)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
+    info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
+
+
     def itemLocked(event):
         dict = event.info
         cacheManager.itemLocked(dict['user'], dict['itemId'], dict['sessionId'])
