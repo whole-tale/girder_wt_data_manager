@@ -145,7 +145,7 @@ class SimpleTransferManager(TransferManager):
                     ModelImporter.model('assetstore').load(file['assetstoreId'])
                 adapter = assetstore_utilities.getAssetstoreAdapter(store)
                 url = adapter.fullPath(file)
-            except ValidationException:
+            except (AttributeError, ValidationException):
                 pass
         if url:
             try:
