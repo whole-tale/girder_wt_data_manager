@@ -43,7 +43,7 @@ class FS(Resource):
     @describeRoute(
         Description('List the content of a folder or item.')
             .param('id', 'The ID of the folder/item.', paramType='path')
-            .errorResponse('ID was invalid.', 404)
+            .errorResponse('ID was invalid.', 400)
             .errorResponse('Read access was denied for the object.', 403)
     )
     def getListing(self, id, params):
@@ -53,7 +53,7 @@ class FS(Resource):
             return self.listItem(obj, params, user)
         if type == 'folder':
             return self.listFolder(obj, params, user)
-        raise RestException(code=404)
+        raise RestException('ID was invalid', code=400)
 
     def listFolder(self, folder, params, user):
         folders = list(
@@ -104,7 +104,7 @@ class FS(Resource):
     @describeRoute(
         Description('Set arbitrary property on folder/item/file')
             .param('id', 'The ID of the object.', paramType='path')
-            .errorResponse('ID was invalid.')
+            .errorResponse('ID was invalid.', 400)
             .errorResponse('Write access was denied.', 403)
     )
     def setProperties(self, id, params):
@@ -127,4 +127,4 @@ class FS(Resource):
             obj = self.model(model).load(id, level=access, user=user)
             if obj is not None:
                 return obj, model
-        raise RestException(code=404)
+        raise RestException('ID was invalid.', code=400)
