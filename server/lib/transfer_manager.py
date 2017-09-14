@@ -8,6 +8,7 @@ import traceback
 from girder.utility import assetstore_utilities
 from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import ValidationException
+from girder import logger
 
 
 class TransferThread(threading.Thread):
@@ -98,7 +99,11 @@ class TransferManager:
 
         for item in data:
             print('Restarting transfer for item ' + str(item))
-            self.startTransfer(self.getUser(item['ownerId']), item['itemId'], item['sessionId'])
+            try:
+                self.startTransfer(self.getUser(item['ownerId']), item['itemId'], item['sessionId'])
+            except Exception as ex:
+                logger.warning('Failed to strart transfer for itemId %s. Reason: %s'
+                               % (item['itemId'], ex.message))
 
     def getUser(self, userId):
         return Models.userModel.load(userId, force=True)
