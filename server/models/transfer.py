@@ -55,15 +55,7 @@ class Transfer(AccessControlledModel):
 
     def getPathFromRoot(self, user, itemId):
         item = self.itemModel.load(itemId, user=user, level=AccessType.READ)
-        if item is None:
-            raise KeyError('No such item %s' % itemId)
-        dictPath = self.itemModel.parentsToRoot(item, user=user)
-        pathFromRoot = '/'
-
-        for dict in dictPath:
-            pathFromRoot = pathFromRoot + '/' + dict['object']['name']
-        return pathFromRoot
-        #return path_util.getResourcePath('item', item, user=user)
+        return path_util.getResourcePath('item', item, user=user)
 
     def setStatus(self, transferId, status, error=None, size=0, transferred=0,
                   setTransferStartTime=False, setTransferEndTime=False):
