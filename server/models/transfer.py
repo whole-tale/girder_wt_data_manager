@@ -1,5 +1,6 @@
 from girder.models.model_base import AccessControlledModel
 from girder.utility.model_importer import ModelImporter
+from girder.utility import path as path_util
 from girder.constants import AccessType
 from ..constants import TransferStatus
 from bson import objectid
@@ -28,7 +29,13 @@ class Transfer(AccessControlledModel):
         else:
             transferId = objectid.ObjectId()
 
-        pathFromRoot = self.getPathFromRoot(user, itemId)
+        try:
+            pathFromRoot = self.getPathFromRoot(user, itemId)
+        except KeyError as ex:
+            # item does not exist any more, so delete existing transfer
+            if existing is not None:
+                self.remove(existing)
+            raise ex
         transfer = {
             '_id': transferId,
             'ownerId': user['_id'],
@@ -48,11 +55,7 @@ class Transfer(AccessControlledModel):
 
     def getPathFromRoot(self, user, itemId):
         item = self.itemModel.load(itemId, user=user, level=AccessType.READ)
-        dictPath = self.itemModel.parentsToRoot(item, user=user)
-        pathFromRoot = '/'
-        for dict in dictPath:
-            pathFromRoot = pathFromRoot + '/' + dict['object']['name']
-        return pathFromRoot
+        return path_util.getResourcePath('item', item, user=user)
 
     def setStatus(self, transferId, status, error=None, size=0, transferred=0,
                   setTransferStartTime=False, setTransferEndTime=False):

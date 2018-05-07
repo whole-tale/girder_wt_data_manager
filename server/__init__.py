@@ -6,6 +6,7 @@ from .resources.session import Session
 from .resources.lock import Lock
 from .resources.transfer import Transfer
 from .resources.dm import DM
+from .resources.fs import FS
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
 from girder.constants import SettingDefault
@@ -41,6 +42,7 @@ def load(info):
     session = Session()
     lock = Lock()
     transfer = Transfer()
+    fs = FS()
 
     pathMapper = path_mapper.PathMapper(settings)
     # transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
@@ -71,10 +73,16 @@ def load(info):
     info['apiRoot'].dm.route('GET', ('session', ':id', 'lock',), lock.listLocksForSession)
     info['apiRoot'].dm.route('GET', ('session', ':id', 'transfer'),
                              transfer.listTransfersForSession)
-    info['apiRoot'].dm.route('GET', ('session', ':id', 'item', ':itemId'),
-                             session.getItemUnfiltered)
+
 
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
+
+    info['apiRoot'].dm.route('GET', ('fs', 'item', ':itemId'), fs.getItemUnfiltered)
+    info['apiRoot'].dm.route('GET', ('fs', ':id', 'raw'), fs.getRawObject)
+    info['apiRoot'].dm.route('PUT', ('fs', ':id', 'setProperties'), fs.setProperties)
+    info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
+    info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
+
 
     def itemLocked(event):
         dict = event.info

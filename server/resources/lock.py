@@ -105,3 +105,13 @@ class Lock(Resource):
     )
     def downloadItem(self, lock, params):
         return self.model('lock', 'wt_data_manager').downloadItem(lock)
+
+    @access.user
+    @describeRoute(
+        Description('Evict an item from the cache.')
+            .param('id', 'The ID of the item.', paramType='path')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Access was denied for the lock.', 403)
+    )
+    def evict(self, id, params):
+        return self.model('lock', 'wt_data_manager').evict(id)
