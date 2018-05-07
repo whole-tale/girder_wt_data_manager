@@ -69,16 +69,16 @@ class Session(Resource):
         return self.model('session', 'wt_data_manager').createSession(user, dataSet)
 
     @access.user
-    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
     @describeRoute(
         Description('Get an object in a session using a path.')
-        .param('id', 'The ID of the session.', paramType='path')
-        .param('path', 'The path of the object, starting from the mount point.', paramType='query')
-        .param('children', 'Whether to also return a listing of all the children '
-                           'of the object at the specified path', paramType='query')
-        .errorResponse('ID was invalid.')
-        .errorResponse('Read access was denied for the session.', 403)
-        .errorResponse('Object was not found.', 401)
+            .param('id', 'The ID of the session.', paramType='path')
+            .param('path', 'The path of the object, starting from the mount point.',
+                   paramType='query')
+            .param('children', 'Whether to also return a listing of all the children '
+                               'of the object at the specified path', paramType='query')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Read access was denied for the session.', 403)
+            .errorResponse('Object was not found.', 401)
     )
     def getObject(self, session, params):
         user = self.getCurrentUser()
@@ -90,19 +90,3 @@ class Session(Resource):
                                                                       params['path'], children)
         except LookupError as ex:
             raise RestException(ex.message, code=401)
-
-    @access.user
-    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
-    @describeRoute(
-        Description('Returns an unfiltered item in this session')
-        .param('id', 'The ID of the session.', paramType='path')
-        .param('itemId', 'The ID of the item.', paramType='path')
-        .errorResponse('ID was invalid.')
-        .errorResponse('Read access was denied for the session.', 403)
-        .errorResponse('Object was not found.', 401)
-    )
-    def getItemUnfiltered(self, session, itemId, params):
-        user = self.getCurrentUser()
-        self.model('session', 'wt_data_manager').checkOwnership(user, session)
-        item = self.model('item').load(itemId, level=AccessType.READ, user=user)
-        return item

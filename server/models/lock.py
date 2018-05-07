@@ -117,6 +117,19 @@ class Lock(AccessControlledModel):
             update={'$set': {Lock.FIELD_DELETE_IN_PROGRESS: False}},
             multi=False)
 
+    def evict(self, itemId):
+        result = self.itemModel.update(
+            query={
+                '_id': objectid.ObjectId(itemId),
+            },
+            update={
+                '$set': {
+                    Lock.FIELD_CACHED: False,
+                }
+            },
+            multi=False)
+        print('Evicting %s. Matched: %s.' % (itemId, result.matched_count))
+
     def tryLock(self, user, sessionId, itemId, ownerId):
         # Luckily, Mongo updates are atomic
         result = self.itemModel.update(
