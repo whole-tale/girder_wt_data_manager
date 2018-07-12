@@ -100,7 +100,8 @@ class TransferManager:
         for item in data:
             print('Restarting transfer for item ' + str(item))
             try:
-                self.startTransfer(self.getUser(item['ownerId']), item['itemId'], item['sessionId'])
+                user = self.getUser(item['ownerId'])
+                self.startTransfer(user, item['itemId'], item['sessionId'])
             except Exception as ex:
                 logger.warning('Failed to strart transfer for itemId %s. Reason: %s'
                                % (item['itemId'], ex.message))
@@ -126,11 +127,11 @@ class SimpleTransferManager(TransferManager):
         self.actualStartTransfer(user, transfer['_id'], itemId)
 
     def actualStartTransfer(self, user, transferId, itemId):
-        transferHandler = self.getTransferHandler(transferId, itemId)
+        transferHandler = self.getTransferHandler(transferId, itemId, user)
         transferThread = TransferThread(itemId, transferHandler)
         transferThread.start()
 
-    def getTransferHandler(self, transferId, itemId):
+    def getTransferHandler(self, transferId, itemId, user):
         item = Models.itemModel.load(itemId, force=True)
         psPath = self.pathMapper.getPSPath(itemId)
         files = list(Models.itemModel.childFiles(item=item))
@@ -157,7 +158,7 @@ class SimpleTransferManager(TransferManager):
                 file['size']
             except KeyError:
                 raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
-            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath)
+            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
         else:
             return GirderDownloadTransferHandler(transferId, itemId, psPath)
 
