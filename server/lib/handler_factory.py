@@ -1,5 +1,6 @@
 from .handlers.local import Local
 from .handlers.http import Http
+from .handlers.globus import Globus
 
 
 class HandlerFactory:
@@ -12,6 +13,7 @@ class HandlerFactory:
         self.handlers['local'] = Local
         self.handlers['http'] = Http
         self.handlers['file'] = Local
+        self.handlers['globus'] = Globus
 
     def getURLTransferHandler(self, url, transferId, itemId, psPath, user):
         if url is None or url == '':

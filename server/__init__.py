@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .constants import PluginSettings
+from .constants import PluginSettings, GlobusEnvironmentVariables
 from .resources.session import Session
 from .resources.lock import Lock
 from .resources.transfer import Transfer
@@ -12,6 +12,7 @@ from girder.utility import setting_utilities
 from girder.constants import SettingDefault
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
+import os
 
 
 @setting_utilities.validator({
@@ -19,11 +20,14 @@ from girder import events
     PluginSettings.PRIVATE_STORAGE_CAPACITY,
     PluginSettings.GC_RUN_INTERVAL,
     PluginSettings.GC_COLLECT_START_FRACTION,
-    PluginSettings.GC_COLLECT_END_FRACTION
+    PluginSettings.GC_COLLECT_END_FRACTION,
+    PluginSettings.GLOBUS_ROOT_PATH,
+    PluginSettings.GLOBUS_CONNECT_DIR,
+    PluginSettings.GLOBUS_ENDPOINT_ID,
+    PluginSettings.GLOBUS_ENDPOINT_NAME
 })
 def validateOtherSettings(event):
     pass
-
 
 def load(info):
     KB = 1024
@@ -37,6 +41,10 @@ def load(info):
     SettingDefault.defaults[PluginSettings.GC_COLLECT_START_FRACTION] = 0.5
     # stop collecting when below %50 usage
     SettingDefault.defaults[PluginSettings.GC_COLLECT_END_FRACTION] = 0.5
+    # set the Globus drop directory to /tmp/wt-globus. In production, this should
+    # be an isolated directory that is on the same filesystem as the storage path in
+    # order to allow files to be moved to the DM cache without actually copying the bytes
+    SettingDefault.defaults[PluginSettings.GLOBUS_ROOT_PATH] = '/tmp/wt-globus'
 
     settings = Setting()
     session = Session()
