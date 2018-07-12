@@ -41,9 +41,12 @@ class TransferHandler:
                                            transferred=self.flen, setTransferEndTime=True)
             self.transferDone()
         except Exception as ex:
-            Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
-                                           error=ex.message, setTransferEndTime=True)
-            traceback.print_exc()
+            self._failTransfer(ex)
+
+    def _failTransfer(self, ex):
+        traceback.print_exc()
+        Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
+                                       error=str(ex), setTransferEndTime=True)
 
     def transfer(self):
         pass
