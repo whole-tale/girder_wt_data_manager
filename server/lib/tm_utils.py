@@ -16,10 +16,11 @@ class TransferHandler:
     TRANSFER_UPDATE_MIN_CHUNK_SIZE = 1024 * 1024
     TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE = 0.001
 
-    def __init__(self, transferId, itemId, psPath):
+    def __init__(self, transferId, itemId, psPath, user):
         self.transferId = transferId
         self.itemId = itemId
         self.psPath = psPath
+        self.user = user
         self.flen = 0
         self.item = Models.itemModel.load(self.itemId, force=True)
         self.lastTransferred = 0
@@ -40,9 +41,12 @@ class TransferHandler:
                                            transferred=self.flen, setTransferEndTime=True)
             self.transferDone()
         except Exception as ex:
-            Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
-                                           error=ex.message, setTransferEndTime=True)
-            traceback.print_exc()
+            self._failTransfer(ex)
+
+    def _failTransfer(self, ex):
+        traceback.print_exc()
+        Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
+                                       error=str(ex), setTransferEndTime=True)
 
     def transfer(self):
         pass

@@ -26,5 +26,13 @@
             label.control-label(for="g-wt-dm-gc-collect-end-fraction") File GC Collection End Fraction
             input#g-wt-dm-gc-collect-end-fraction.input-sm.form-control(
                 type="text", placeholder="File GC Collection End Fraction")
+          .form-group
+            label.control-label(for="g-wt-dm-globus-root-path") Globus Root Path
+            input#g-wt-dm-globus-root-path.input-sm.form-control(
+                type="text", placeholder="Globus Root Path")
+          .form-group
+            label.control-label(for="g-wt-dm-globus-gc-dir") Globus Connect Directory
+            input#g-wt-dm-globus-gc-dir.input-sm.form-control(
+                type="text", placeholder="Globus Connect Directory")
           p#g-wt-dm-config-error-message.g-validation-failed-message()
           input.btn.btn-sm.btn-primary(type="submit", value="Save")

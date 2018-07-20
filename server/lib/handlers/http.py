@@ -18,8 +18,8 @@ class HttpStream:
 
 
 class Http(FileLikeUrlTransferHandler):
-    def __init__(self, url, transferId, itemId, psPath):
-        FileLikeUrlTransferHandler.__init__(self, url, transferId, itemId, psPath)
+    def __init__(self, url, transferId, itemId, psPath, user):
+        FileLikeUrlTransferHandler.__init__(self, url, transferId, itemId, psPath, user)
 
     def openInputStream(self):
         return HttpStream(urlopen(self.url))
