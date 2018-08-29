@@ -1,7 +1,8 @@
 from ..tm_utils import TransferHandler
 from ._globus.server import Server
+from ._globus.clients import Clients
 from threading import Lock
-from globus_sdk import TransferData, RefreshTokenAuthorizer, AccessTokenAuthorizer
+from globus_sdk import TransferData
 from girder.utility.model_importer import ModelImporter
 from girder import logger
 from urllib.parse import urlparse
@@ -10,7 +11,6 @@ import time
 import shutil
 import os
 
-_TRANSFER_SCOPE = 'urn:globus:auth:scope:transfer.api.globus.org:all'
 
 class Globus(TransferHandler):
     def __init__(self, url, transferId, itemId, psPath, user):
@@ -18,6 +18,7 @@ class Globus(TransferHandler):
         self.url = url
         self.server = None
         self.serverLock = Lock()
+        self.clients = Clients()
 
     def transfer(self):
         # this isn't very scalable and there isn't much wisdom in wasting a thread on a transfer
@@ -25,7 +26,7 @@ class Globus(TransferHandler):
         # gridftp server processes anyway, so this may not quite be the bottleneck
         self._maybeStartServer()
         userEndpointId = self.server.getUserEndpointId(self.user)
-        tc = self.server.getUserTransferClient(self.user['login'], self._getAuthorizer())
+        tc = self.clients.getUserTransferClient(self.user)
 
         tmpName = str(uuid.uuid4())
         transfer = TransferData(tc, self._getSourceEndpointId(), userEndpointId,
@@ -91,22 +92,7 @@ class Globus(TransferHandler):
     def _maybeStartServer(self):
         with self.serverLock:
             if self.server is None:
-                self.server = Server()
+                self.server = Server(self.clients)
                 self.server.start()
 
 
-    def _getAuthorizer(self):
-        if not 'otherTokens' in self.user:
-            raise Exception('No transfer token found')
-
-        tokens = self.user['otherTokens']
-
-        for token in tokens:
-            if token['scope'] == _TRANSFER_SCOPE:
-                if 'refresh_token' in token and token['refresh_token'] is not None:
-                    return RefreshTokenAuthorizer(token['refresh_token'],
-                                                  self.server.getAuthClient())
-                else:
-                    return AccessTokenAuthorizer(token['access_token'])
-
-        raise Exception('No globus transfer token found')

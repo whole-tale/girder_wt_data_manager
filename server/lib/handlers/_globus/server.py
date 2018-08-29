@@ -1,9 +1,6 @@
 from girder.models.setting import Setting
-from globus_sdk import ConfidentialAppAuthClient, AccessTokenAuthorizer, \
-    ClientCredentialsAuthorizer, TransferClient
-from ....constants import GlobusEnvironmentVariables, PluginSettings
+from ....constants import PluginSettings, GlobusEnvironmentVariables
 from girder import logger
-from girder.plugins.oauth.constants import PluginSettings as OAuthPluginSettings
 import os
 import uuid
 import subprocess
@@ -12,8 +9,6 @@ import pathlib
 import time
 from threading import RLock
 
-_APP_TOKEN_VALIDITY_MARGIN = 60
-_APP_SCOPES = ['urn:globus:auth:scope:transfer.api.globus.org:all']
 
 def _runGCCommand(*args):
     p = subprocess.run(list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -41,17 +36,15 @@ class GCThread(threading.Thread):
                       'rw%s' % self.globusRoot, '-shared-paths', self.globusRoot, '-dir',
                       self.confDir)
 
+
 class Server:
-    def __init__(self):
-        self.authClient = None
-        self.transferClient = None
+    def __init__(self, clients):
         self.gcDir = self._getGCDir()
         self.sharedEndpoints = None
         self.sharedEndpointsLock = RLock()
         self.sharedEndpointsCreationLocks = {}
-        self.userClients = {}
-        self.userClientsLock = RLock()
         self.globusRoot = Setting().get(PluginSettings.GLOBUS_ROOT_PATH, '/tmp/wt-globus')
+        self.clients = clients
 
     def start(self):
         # look for an endpoint name, which means that we've previously initialized a personal
@@ -67,10 +60,10 @@ class Server:
 
     def _getEndpointKey(self):
         # returns either the Globus app ID or none if a token is being used
-        if self._getGlobusAdminToken() is not None:
+        if self.clients.getGlobusAdminToken() is not None:
             return 'default'
         else:
-            return self._getGlobusClientId()
+            return self.clients.getGlobusClientId()
 
     def _getEndpointDataByKey(self, key):
         settings = Setting()
@@ -138,7 +131,7 @@ class Server:
 
     def _createUserEndpoint(self, user):
         userName = user['login']
-        tc = self.getTransferClient()
+        tc = self.clients.getTransferClient()
         fullPath = '%s/%s/' % (self.globusRoot, userName)
         if not os.path.exists(fullPath):
             os.makedirs(fullPath)
@@ -174,7 +167,7 @@ class Server:
         if failure is not None:
             tc.delete_endpoint(id)
             raise Exception("Could not set ACL rule on shared endpoint for user %s: %s" %
-                                (userName, failure))
+                            (userName, failure))
 
     def _getGlobusUserId(self, user):
         if 'oauth' in user:
@@ -195,7 +188,7 @@ class Server:
         if self.sharedEndpoints is not None:
             return
         self.sharedEndpoints = {}
-        tc = self.getTransferClient()
+        tc = self.clients.getTransferClient()
         resp = tc.my_shared_endpoint_list(self.endpointId)
         for ep in resp:
             self.sharedEndpoints[ep['description']] = ep
@@ -206,7 +199,7 @@ class Server:
         self._waitForGCServerToConnect()
 
     def _waitForGCServerToConnect(self):
-        tc = self.getTransferClient()
+        tc = self.clients.getTransferClient()
         for attempt in range(20):
             ep = tc.get_endpoint(self.endpointId)
             if ep['gcp_connected']:
@@ -216,7 +209,7 @@ class Server:
         raise Exception('Globus Connect Server was not reported as connected after 20s')
 
     def _createEndpoint(self):
-        tc = self.getTransferClient()
+        tc = self.clients.getTransferClient()
         endpointName = self._generateEndpointName()
 
         res = tc.create_endpoint({
@@ -236,65 +229,6 @@ class Server:
     def _generateEndpointName(self):
         return 'wt-%s' % uuid.uuid4()
 
-    def getTransferClient(self):
-        if self.transferClient is None:
-            authz = self._getAppTransferAuthorizer()
-            self.transferClient = TransferClient(authz)
-            # almost dummy call as a sanity check
-            self.transferClient.task_list(num_results=1)
-
-        return self.transferClient
-
-    # TODO: this shouldn't be here
-    def getUserTransferClient(self, username, authz):
-        with self.userClientsLock:
-            if username not in self.userClients:
-                self.userClients[username] = TransferClient(authz)
-            return self.userClients[username]
-
-    def _getAppTransferAuthorizer(self):
-        # mostly for testing/debugging
-        adminToken = self._getGlobusAdminToken()
-        if adminToken is not None:
-            return AccessTokenAuthorizer(adminToken)
-
-        authClient = self.getAuthClient()
-
-        return ClientCredentialsAuthorizer(authClient, _APP_SCOPES)
-
-    def getAuthClient(self):
-        if self.authClient is None:
-            clientId = self._getGlobusClientId()
-            clientSecret = self._getGlobusClientSecret()
-
-            self.authClient = ConfidentialAppAuthClient(clientId, clientSecret)
-
-        return self.authClient
-
-    def _getGlobusAdminToken(self):
-        if 'GLOBUS_ADMIN_TOKEN' in os.environ:
-            return os.environ['GLOBUS_ADMIN_TOKEN']
-
-    def _getGlobusClientId(self):
-        return self._getGlobusSetting(GlobusEnvironmentVariables.GLOBUS_CLIENT_ID,
-                                      OAuthPluginSettings.GLOBUS_CLIENT_ID)
-
-    def _getGlobusClientSecret(self):
-        return self._getGlobusSetting(GlobusEnvironmentVariables.GLOBUS_CLIENT_SECRET,
-                                      OAuthPluginSettings.GLOBUS_CLIENT_SECRET)
-
     def _getGCDir(self):
-        return self._getGlobusSetting(GlobusEnvironmentVariables.GLOBUS_CONNECT_DIR,
-                                      PluginSettings.GLOBUS_CONNECT_DIR)
-
-    def _getGlobusSetting(self, envVarName, settingName):
-        # allow environment variables to override stored settings. Use carefully since
-        # the OAuth plugin does not look at these.
-        if envVarName in os.environ:
-            return os.environ[envVarName]
-
-        value = Setting().get(settingName, None)
-        if value is None:
-            raise Exception('Missing configuration setting "%s" (env "%s")' %
-                            (settingName, envVarName))
-        return value
+        return self.clients._getGlobusSetting(GlobusEnvironmentVariables.GLOBUS_CONNECT_DIR,
+                                              PluginSettings.GLOBUS_CONNECT_DIR)
