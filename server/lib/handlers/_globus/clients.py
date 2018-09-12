@@ -40,7 +40,7 @@ class Clients:
             return self.userClients[username]
 
     def getAuthorizer(self, user):
-        if not 'otherTokens' in user:
+        if 'otherTokens' not in user:
             raise Exception('No transfer token found')
 
         tokens = user['otherTokens']

@@ -7,7 +7,7 @@ import time
 import os
 import cherrypy
 import json
-from httpserver import Server
+from .httpserver import Server
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
 
@@ -198,7 +198,6 @@ class IntegrationTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(sessionId, str(resp.json['_id']))
 
-
         item = self.gfiles[0]
 
         # This coverage business, as implemented, is wrong really. Both branches of
@@ -311,7 +310,6 @@ class IntegrationTestCase(base.TestCase):
         self.assertEqual(1, remainingCount)
         self.assertEqual(1, len(self._getCachedItems()))
         gc.resume()
-
 
     def _getCachedItems(self):
         return list(self.model('item').find({'dm.cached': True}, user=self.user))

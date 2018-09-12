@@ -1,11 +1,11 @@
-from girder.api.rest import Resource, RestException, loadmodel
+import bson
+from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, TokenScope
 from girder.api import access
 from girder.api.describe import Description, describeRoute
 from girder.utility import assetstore_utilities
 from girder.models.model_base import ValidationException
-from girder.utility.filesystem_assetstore_adapter import FilesystemAssetstoreAdapter
-import bson
+
 
 class FS(Resource):
 
@@ -18,9 +18,9 @@ class FS(Resource):
     @access.user
     @describeRoute(
         Description('Returns an unfiltered item')
-            .param('itemId', 'The ID of the item.', paramType='path')
-            .errorResponse('ID was invalid.')
-            .errorResponse('Object was not found.', 401)
+        .param('itemId', 'The ID of the item.', paramType='path')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Object was not found.', 401)
     )
     def getItemUnfiltered(self, itemId, params):
         user = self.getCurrentUser()
@@ -30,9 +30,9 @@ class FS(Resource):
     @access.public(scope=TokenScope.DATA_READ)
     @describeRoute(
         Description('Returns an unfiltered object')
-            .param('itemId', 'The ID of the object.', paramType='path')
-            .errorResponse('ID was invalid.')
-            .errorResponse('Object was not found.', 401)
+        .param('itemId', 'The ID of the object.', paramType='path')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Object was not found.', 401)
     )
     def getRawObject(self, id, params):
         user = self.getCurrentUser()
@@ -42,9 +42,9 @@ class FS(Resource):
     @access.public(scope=TokenScope.DATA_READ)
     @describeRoute(
         Description('List the content of a folder or item.')
-            .param('id', 'The ID of the folder/item.', paramType='path')
-            .errorResponse('ID was invalid.', 400)
-            .errorResponse('Read access was denied for the object.', 403)
+        .param('id', 'The ID of the folder/item.', paramType='path')
+        .errorResponse('ID was invalid.', 400)
+        .errorResponse('Read access was denied for the object.', 403)
     )
     def getListing(self, id, params):
         user = self.getCurrentUser()
@@ -68,7 +68,7 @@ class FS(Resource):
                 fileitem = childFiles[0]
                 fileitem['folderId'] = folder['_id']
                 if 'imported' not in fileitem and \
-                                fileitem.get('assetstoreId') is not None:
+                        fileitem.get('assetstoreId') is not None:
                     try:
                         store = \
                             self.model('assetstore').load(fileitem['assetstoreId'])
@@ -89,7 +89,7 @@ class FS(Resource):
         files = []
         for fileitem in self.model('item').childFiles(item):
             if 'imported' not in fileitem and \
-                            fileitem.get('assetstoreId') is not None:
+                    fileitem.get('assetstoreId') is not None:
                 try:
                     store = \
                         self.model('assetstore').load(fileitem['assetstoreId'])
@@ -103,9 +103,9 @@ class FS(Resource):
     @access.user
     @describeRoute(
         Description('Set arbitrary property on folder/item/file')
-            .param('id', 'The ID of the object.', paramType='path')
-            .errorResponse('ID was invalid.', 400)
-            .errorResponse('Write access was denied.', 403)
+        .param('id', 'The ID of the object.', paramType='path')
+        .errorResponse('ID was invalid.', 400)
+        .errorResponse('Write access was denied.', 403)
     )
     def setProperties(self, id, params):
         id = bson.ObjectId(id)
