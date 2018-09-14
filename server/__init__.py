@@ -14,6 +14,7 @@ from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
 from girder.models.item import Item as ItemModel
 
+
 @setting_utilities.validator({
     PluginSettings.PRIVATE_STORAGE_PATH,
     PluginSettings.PRIVATE_STORAGE_CAPACITY,
