@@ -9,10 +9,10 @@ from .resources.dm import DM
 from .resources.fs import FS
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
-from girder.constants import SettingDefault
+from girder.constants import SettingDefault, AccessType
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
-
+from girder.models.item import Item as ItemModel
 
 @setting_utilities.validator({
     PluginSettings.PRIVATE_STORAGE_PATH,
@@ -112,3 +112,4 @@ def load(info):
     events.bind('dm.itemLocked', 'itemLocked', itemLocked)
     events.bind('dm.itemUnlocked', 'itemUnlocked', itemUnlocked)
     events.bind('dm.fileDownloaded', 'fileDownloaded', fileDownloaded)
+    ItemModel().exposeFields(level=AccessType.READ, fields={'dm'})
