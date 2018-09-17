@@ -14,11 +14,13 @@ class PluginSettings:
     GLOBUS_ENDPOINT_ID = 'dm.globus_endpoint_id'
     GLOBUS_ENDPOINT_NAME = 'dm.globus_endpoint_name'
 
+
 class GlobusEnvironmentVariables:
     GLOBUS_CLIENT_ID = 'GLOBUS_CLIENT_ID'
     GLOBUS_CLIENT_SECRET = 'GLOBUS_CLIENT_SECRET'
     GLOBUS_CONNECT_DIR = 'GLOBUS_CONNECT_DIR'
     ALL = [GLOBUS_CLIENT_ID, GLOBUS_CLIENT_SECRET, GLOBUS_CONNECT_DIR]
+
 
 class TransferStatus:
     INITIALIZING = 0
