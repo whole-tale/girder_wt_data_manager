@@ -6,7 +6,8 @@ from girder.api.rest import Resource, RestException
 from girder.api.rest import filtermodel, loadmodel
 from girder.constants import AccessType
 from girder.api import access
-from girder.api.describe import Description, describeRoute
+from girder.api.describe import Description, describeRoute, autoDescribeRoute
+from ..models.session import Session as SessionModel
 import json
 
 
@@ -28,20 +29,20 @@ class Session(Resource):
         return list(self.model('session', 'wt_data_manager').list(user=user))
 
     @access.user
-    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.READ)
-    @describeRoute(
+    @filtermodel(model=SessionModel)
+    @autoDescribeRoute(
         Description('Get a session by ID.')
-        .param('id', 'The ID of the session.', paramType='path')
-        .param('loadObjects', 'If specified, the dataSet of the returned session will contain'
+        .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
+        .param('loadObjects', 'If True, the dataSet of the returned session will contain'
                               'two additional fields for each entry: "type": "folder"|"item" '
-                              'and "obj": <itemOrFolder>', paramType='query')
+                              'and "obj": <itemOrFolder>', dataType='boolean', required=False,
+                              default=False)
         .errorResponse('ID was invalid.')
         .errorResponse('Read access was denied for the session.', 403)
     )
-    @filtermodel(model='session', plugin='wt_data_manager')
-    def getSession(self, session, params):
-        if 'loadObjects' in params:
-            self.model('session', 'wt_data_manager').loadObjects(session['dataSet'])
+    def getSession(self, session, loadObjects):
+        if loadObjects:
+            SessionModel().loadObjects(session['dataSet'])
         return session
 
     @access.user
