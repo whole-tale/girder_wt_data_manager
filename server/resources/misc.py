@@ -29,6 +29,10 @@ def folderToDataset(self, folder):
             })
         for child_folder in FolderModel().childFolders(
                 parentType='folder', parent=folder, user=user):
+            data_set.append({
+                'itemId': str(child_folder['_id']),
+                'mountPoint': os.path.join(current_path, child_folder['name'])
+            })
             data_set += _recurse(
                 child_folder,
                 os.path.join(current_path, child_folder['name']),
