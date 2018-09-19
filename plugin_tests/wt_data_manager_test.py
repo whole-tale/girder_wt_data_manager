@@ -74,9 +74,9 @@ class IntegrationTestCase(base.TestCase):
 
     def makeDataSet(self, items, objectids=True):
         if objectids:
-            return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
+            return [{'itemId': f['_id'], 'mountPath': '/' + f['name']} for f in items]
         else:
-            return [{'itemId': str(f['_id']), 'mountPoint': '/' + f['name']} for f in items]
+            return [{'itemId': str(f['_id']), 'mountPath': '/' + f['name']} for f in items]
 
     def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
