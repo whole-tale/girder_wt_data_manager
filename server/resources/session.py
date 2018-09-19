@@ -20,11 +20,11 @@ class Session(Resource):
         return session
 
     @access.user
-    @filtermodel(model='session', plugin='wt_data_manager')
-    @describeRoute(
+    @filtermodel(model=SessionModel)
+    @autoDescribeRoute(
         Description('List sessions for a given user.')
     )
-    def listSessions(self, params):
+    def listSessions(self):
         user = self.getCurrentUser()
         return list(self.model('session', 'wt_data_manager').list(user=user))
 
@@ -46,16 +46,15 @@ class Session(Resource):
         return session
 
     @access.user
-    @loadmodel(model='session', plugin='wt_data_manager', level=AccessType.WRITE)
-    @describeRoute(
+    @autoDescribeRoute(
         Description('Removes an existing session.')
-        .param('id', 'The ID of the session.', paramType='path')
+        .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
         .errorResponse('ID was invalid.')
         .errorResponse('Access was denied for the session.', 403)
     )
     def removeSession(self, session, params):
         user = self.getCurrentUser()
-        return self.model('session', 'wt_data_manager').deleteSession(user, session)
+        return SessionModel().deleteSession(user, session)
 
     @access.user
     @describeRoute(
@@ -67,27 +66,24 @@ class Session(Resource):
     def createSession(self, params):
         user = self.getCurrentUser()
         dataSet = json.loads(params.get('dataSet', '[]'))
-        return self.model('session', 'wt_data_manager').createSession(user, dataSet)
+        return SessionModel().createSession(user, dataSet)
 
     @access.user
-    @describeRoute(
+    @autoDescribeRoute(
         Description('Get an object in a session using a path.')
-        .param('id', 'The ID of the session.', paramType='path')
+        .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
         .param('path', 'The path of the object, starting from the mount point.',
                paramType='query')
         .param('children', 'Whether to also return a listing of all the children '
-               'of the object at the specified path', paramType='query')
+               'of the object at the specified path', dataType='boolean', required=False,
+               default=False)
         .errorResponse('ID was invalid.')
         .errorResponse('Read access was denied for the session.', 403)
         .errorResponse('Object was not found.', 401)
     )
-    def getObject(self, session, params):
+    def getObject(self, session, path, children):
         user = self.getCurrentUser()
-        children = False
-        if 'children' in params:
-            children = True
         try:
-            return self.model('session', 'wt_data_manager').getObject(user, session,
-                                                                      params['path'], children)
+            return SessionModel().getObject(user, session, path, children)
         except LookupError as ex:
-            raise RestException(ex.message, code=401)
+            raise RestException(str(ex), code=401)

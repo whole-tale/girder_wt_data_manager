@@ -231,7 +231,6 @@ class IntegrationTestCase(base.TestCase):
         # test get lock
         resp = self.request('/dm/lock/%s' % lockId, method='GET', user=self.user)
         self.assertStatusOk(resp)
-            self.cache[obj_id] = self.girder_cli.get('dm/fs/%s/listing' % obj_id2
         self.assertEqual(lockId, str(resp.json['_id']))
 
         item = self.reloadItemRest(item)
