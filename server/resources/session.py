@@ -3,7 +3,7 @@
 
 
 from girder.api.rest import Resource, RestException
-from girder.api.rest import filtermodel, loadmodel
+from girder.api.rest import filtermodel
 from girder.constants import AccessType
 from girder.api import access
 from girder.api.describe import Description, describeRoute, autoDescribeRoute

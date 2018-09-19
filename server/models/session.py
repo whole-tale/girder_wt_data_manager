@@ -75,7 +75,8 @@ class Session(AccessControlledModel):
                 entry['obj'] = folder
             else:
                 entry['type'] = 'item'
-                entry['obj'] = self.itemModel.load(entry['itemId'], force=True, fields=self.objFields)
+                entry['obj'] = self.itemModel.load(entry['itemId'], force=True,
+                                                   fields=self.objFields)
 
     def checkOwnership(self, user, session):
         if 'ownerId' in session:
