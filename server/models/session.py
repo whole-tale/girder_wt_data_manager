@@ -18,6 +18,7 @@ class Session(AccessControlledModel):
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
+        self.objFields = ['_id', 'created', 'name', 'size', 'updated']
 
     def validate(self, session):
         return session
@@ -46,7 +47,7 @@ class Session(AccessControlledModel):
         :param user: The user creating the job.
         :type user: dict or None
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
-         of dictionaries with two keys: 'itemId', and 'mountPath'
+         of dictionaries with two keys: 'itemId', and 'mountPoint'
         :type dataSet: list
         """
 
@@ -68,13 +69,14 @@ class Session(AccessControlledModel):
         for entry in dataSet:
             if 'type' in entry:
                 continue
-            folder = self.folderModel.load(entry['itemId'], force=True)
+            folder = self.folderModel.load(entry['itemId'], force=True, fields=self.objFields)
             if folder is not None:
                 entry['type'] = 'folder'
                 entry['obj'] = folder
             else:
                 entry['type'] = 'item'
-                entry['obj'] = self.itemModel.load(entry['itemId'], force=True)
+                entry['obj'] = self.itemModel.load(entry['itemId'], force=True,
+                                                   fields=self.objFields)
 
     def checkOwnership(self, user, session):
         if 'ownerId' in session:
@@ -142,7 +144,7 @@ class Session(AccessControlledModel):
 
     def findRootContainer(self, session, path):
         for obj in session['dataSet']:
-            rootPath = obj['mountPath']
+            rootPath = obj['mountPoint']
             if path == rootPath:
                 return (None, self.loadObject(str(obj['itemId'])))
             if rootPath[-1] != '/':

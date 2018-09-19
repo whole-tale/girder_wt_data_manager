@@ -7,6 +7,7 @@ from .resources.lock import Lock
 from .resources.transfer import Transfer
 from .resources.dm import DM
 from .resources.fs import FS
+from .resources.misc import folderToDataset
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
 from girder.constants import SettingDefault, AccessType
@@ -90,6 +91,8 @@ def load(info):
     info['apiRoot'].dm.route('PUT', ('fs', ':id', 'setProperties'), fs.setProperties)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
+
+    info['apiRoot'].dm.route('GET', ('folder', ':id'), folderToDataset)
 
     def itemLocked(event):
         dict = event.info

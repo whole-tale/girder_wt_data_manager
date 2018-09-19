@@ -7,6 +7,7 @@ import time
 import os
 import cherrypy
 import json
+from operator import itemgetter
 from .httpserver import Server
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
@@ -191,7 +192,7 @@ class IntegrationTestCase(base.TestCase):
 
         # get session
         resp = self.request('/dm/session/%s' % sessionId, method='GET', user=self.user, params={
-            'loadObjects': 'true'
+            'loadObjects': True
         })
         self.assertStatusOk(resp)
         self.assertEqual(sessionId, str(resp.json['_id']))
@@ -306,6 +307,15 @@ class IntegrationTestCase(base.TestCase):
         self.assertEqual(1, remainingCount)
         self.assertEqual(1, len(self._getCachedItems()))
         gc.resume()
+
+    def test08Misc(self):
+        resp = self.request('/dm/folder/{_id}'.format(**self.testFolder),
+                            method='GET', user=self.user)
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            sorted(resp.json, key=itemgetter('itemId')),
+            sorted(self.makeDataSet(self.gfiles, objectids=False),
+                   key=itemgetter('itemId')))
 
     def _getCachedItems(self):
         return list(self.model('item').find({'dm.cached': True}, user=self.user))
