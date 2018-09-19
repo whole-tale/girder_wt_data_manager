@@ -47,7 +47,7 @@ class Session(AccessControlledModel):
         :param user: The user creating the job.
         :type user: dict or None
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
-         of dictionaries with two keys: 'itemId', and 'mountPath'
+         of dictionaries with two keys: 'itemId', and 'mountPoint'
         :type dataSet: list
         """
 
@@ -143,7 +143,7 @@ class Session(AccessControlledModel):
 
     def findRootContainer(self, session, path):
         for obj in session['dataSet']:
-            rootPath = obj['mountPath']
+            rootPath = obj['mountPoint']
             if path == rootPath:
                 return (None, self.loadObject(str(obj['itemId'])))
             if rootPath[-1] != '/':
