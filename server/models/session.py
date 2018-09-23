@@ -7,7 +7,6 @@ from bson import objectid
 from girder.constants import AccessType
 from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import AccessControlledModel, AccessException
-from girder.exceptions import RestException
 from girder import events
 
 
@@ -106,7 +105,10 @@ class Session(AccessControlledModel):
 
     def containsItem(self, sessionId, itemId, user):
         session = self.load(sessionId, level=AccessType.READ, user=user)
-        return itemId in session['dataSet']
+        for entry in session['dataSet']:
+            if entry['itemId'] == itemId:
+                return True
+        return False
 
     def deleteSession(self, user, session):
         self.checkOwnership(user, session)
