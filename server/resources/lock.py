@@ -7,6 +7,8 @@ from girder.api.rest import filtermodel, loadmodel
 from girder.constants import AccessType
 from girder.api import access
 from girder.api.describe import Description, describeRoute
+from girder.exceptions import RestException
+from ..models.session import Session
 
 
 class Lock(Resource):
@@ -85,6 +87,7 @@ class Lock(Resource):
         .param('sessionId', 'A Data Manager session.', paramType='query')
         .param('itemId', 'The item to lock', paramType='query')
         .param('ownerId', 'The lock owner.', paramType='query', required=False)
+        .errorResponse('Item not in session.', 404)
     )
     def acquireLock(self, params):
         user = self.getCurrentUser()
@@ -93,6 +96,8 @@ class Lock(Resource):
         ownerId = None
         if 'ownerId' in params:
             ownerId = params['ownerId']
+        if not Session().containsItem(sessionId, itemId, user):
+            raise RestException('Item not in the session', 404)
         return self.model('lock', 'wt_data_manager').acquireLock(user, sessionId, itemId, ownerId)
 
     @access.user
