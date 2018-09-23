@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .constants import PluginSettings, GlobusEnvironmentVariables
+from .constants import PluginSettings
 from .resources.session import Session
 from .resources.lock import Lock
 from .resources.transfer import Transfer
@@ -9,10 +9,10 @@ from .resources.dm import DM
 from .resources.fs import FS
 from girder.models.setting import Setting
 from girder.utility import setting_utilities
-from girder.constants import SettingDefault
+from girder.constants import SettingDefault, AccessType
 from .lib import transfer_manager, file_gc, cache_manager, path_mapper
 from girder import events
-import os
+from girder.models.item import Item as ItemModel
 
 
 @setting_utilities.validator({
@@ -28,6 +28,7 @@ import os
 })
 def validateOtherSettings(event):
     pass
+
 
 def load(info):
     KB = 1024
@@ -82,7 +83,6 @@ def load(info):
     info['apiRoot'].dm.route('GET', ('session', ':id', 'transfer'),
                              transfer.listTransfersForSession)
 
-
     info['apiRoot'].dm.route('GET', ('transfer',), transfer.listTransfers)
 
     info['apiRoot'].dm.route('GET', ('fs', 'item', ':itemId'), fs.getItemUnfiltered)
@@ -90,7 +90,6 @@ def load(info):
     info['apiRoot'].dm.route('PUT', ('fs', ':id', 'setProperties'), fs.setProperties)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
-
 
     def itemLocked(event):
         dict = event.info
@@ -114,3 +113,4 @@ def load(info):
     events.bind('dm.itemLocked', 'itemLocked', itemLocked)
     events.bind('dm.itemUnlocked', 'itemUnlocked', itemUnlocked)
     events.bind('dm.fileDownloaded', 'fileDownloaded', fileDownloaded)
+    ItemModel().exposeFields(level=AccessType.READ, fields={'dm'})

@@ -54,7 +54,7 @@ class Globus(TransferHandler):
                 dir = os.path.dirname(self.psPath)
                 try:
                     os.makedirs(dir)
-                except:
+                except OSError:
                     if not os.path.exists(dir):
                         raise Exception('Could not create transfer destination directory: %s' % dir)
                 shutil.move('%s/%s' % (self.server.getUserDir(self.user), tmpName), self.psPath)
@@ -94,5 +94,3 @@ class Globus(TransferHandler):
             if self.server is None:
                 self.server = Server(self.clients)
                 self.server.start()
-
-

@@ -1,4 +1,4 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import re
 import threading
 
@@ -37,9 +37,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-type', mimetype)
             self.end_headers()
 
-            buf = ''
+            buf = b''
             for i in range(BUFLEN):
-                buf += chr(i % 256)
+                buf += b'\0'
 
             while szm > BUFLEN:
                 self.wfile.write(buf)
@@ -67,7 +67,7 @@ class Server(threading.Thread):
     def run(self):
         try:
             self.server.serve_forever()
-        except:
+        except Exception as e:
             self.server.socket.close()
 
     def getUrl(self):

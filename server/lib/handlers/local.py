@@ -8,4 +8,4 @@ class Local(FileLikeUrlTransferHandler):
 
     def openInputStream(self):
         parsedUrl = urlparse(self.url)
-        return open(parsedUrl.path, 'r')
+        return open(parsedUrl.path, 'rb')

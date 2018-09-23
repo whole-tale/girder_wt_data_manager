@@ -12,6 +12,7 @@ class HandlerFactory:
         self.handlers = {}
         self.handlers['local'] = Local
         self.handlers['http'] = Http
+        self.handlers['https'] = Http
         self.handlers['file'] = Local
         self.handlers['globus'] = Globus
 

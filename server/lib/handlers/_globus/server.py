@@ -215,7 +215,6 @@ class Server:
         res = tc.create_endpoint({
             'DATA_TYPE': 'endpoint',
             'display_name': endpointName,
-            #'public': False,
             'public': True,
             'is_globus_connect': True,
         })

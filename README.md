@@ -171,8 +171,8 @@ DM.createSession(user, dataSet)
 ```
 
 where ``dataSet`` is a list of dictionaries with keys ``itemId`` and
-``mountPoint``, where ``itemId`` is a Girder item or folder id and
-``mountPoint`` is an absolute path where the item/folder are mounted in the
+``mountPath``, where ``itemId`` is a Girder item or folder id and
+``mountPath`` is an absolute path where the item/folder are mounted in the
 EFS.
 
 ```python
@@ -187,8 +187,8 @@ Example:
 dm = info['apiRoot'].dm
 
 dataSet = [
-    {'itemId': '58b08d98cbb11e6d0f95df9f', 'mountPoint': '/x/y/z'},
-    {'itemId': '582f621ccbb11e75430a89ae', 'mountPoint': '/myfile.dat'}
+    {'itemId': '58b08d98cbb11e6d0f95df9f', 'mountPath': '/x/y/z'},
+    {'itemId': '582f621ccbb11e75430a89ae', 'mountPath': '/myfile.dat'}
 ]
 
 session = dm.createSession(user, dataSet)

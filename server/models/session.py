@@ -160,9 +160,9 @@ class Session(AccessControlledModel):
         raise LookupError("No such object: " + id)
 
     def listChildren(self, item):
-        l = list(self.folderModel.childFolders(item, 'folder'))
-        l.extend(self.folderModel.childItems(item))
-        return l
+        children = list(self.folderModel.childFolders(item, 'folder'))
+        children.extend(self.folderModel.childItems(item))
+        return children
 
     def findObjectInFolder(self, container, name):
         parentId = container['_id']
@@ -180,8 +180,8 @@ class Session(AccessControlledModel):
         raise LookupError('No such object: ' + name)
 
     def splitPath(self, path):
-        l = []
+        current_path = []
         while path != '' and path != '/':
             (path, tail) = os.path.split(path)
-            l.insert(0, tail)
-        return l
+            current_path.insert(0, tail)
+        return current_path
