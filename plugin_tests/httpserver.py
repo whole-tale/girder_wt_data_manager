@@ -67,7 +67,7 @@ class Server(threading.Thread):
     def run(self):
         try:
             self.server.serve_forever()
-        except:
+        except Exception:
             self.server.socket.close()
 
     def getUrl(self):
