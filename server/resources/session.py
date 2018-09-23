@@ -73,13 +73,13 @@ class Session(Resource):
         Description('Modifies a session. Specifically, allows changing the dataSet of a session,'
                     'which implies the ability to add/remove folders/files from a live session.'
                     'Note that removal can fail if a file is in use.')
-            .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
-            .jsonParam('dataSet', 'An optional data set to initialize the session with. '
-                                  'A data set is a list of objects of the form '
-                                  '{"itemId": string, "mountPath": string}.', paramType='query',
-                       schema=dataSetSchema)
-            .errorResponse('ID was invalid.')
-            .errorResponse('Write access was denied for the session.', 403)
+        .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
+        .jsonParam('dataSet', 'An optional data set to initialize the session with. '
+                              'A data set is a list of objects of the form '
+                              '{"itemId": string, "mountPath": string}.', paramType='query',
+                   schema=dataSetSchema)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Write access was denied for the session.', 403)
     )
     @filtermodel(model='session', plugin='wt_data_manager')
     def modifySession(self, session, dataSet):
