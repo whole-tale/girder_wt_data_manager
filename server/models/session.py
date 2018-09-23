@@ -7,6 +7,7 @@ from bson import objectid
 from girder.constants import AccessType
 from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import AccessControlledModel, AccessException
+from girder.exceptions import RestException
 from girder import events
 
 
@@ -43,7 +44,7 @@ class Session(AccessControlledModel):
         """
         Create a new session.
 
-        :param user: The user creating the job.
+        :param user: The user creating the session.
         :type user: dict or None
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
          of dictionaries with two keys: 'itemId', and 'mountPath'
@@ -63,6 +64,25 @@ class Session(AccessControlledModel):
         events.trigger('dm.sessionCreated', info=session)
 
         return session
+
+    def modifySession(self, user, session, dataSet):
+        """
+        Modify an existing session.
+
+        :param user: Must be the owner of the session
+        :type user: dict or None
+        :param session: The session that is being modified
+        :type session: dict
+        :param dataSet: The new dataSet to associate with this session. See createSession for
+         details
+        :type dataSet: list
+        :return:
+        """
+
+        session['dataSet'] = dataSet
+        session = self.save(session)
+
+        events.trigger('dm.sessionModified', info=session)
 
     def loadObjects(self, dataSet):
         for entry in dataSet:
@@ -84,40 +104,14 @@ class Session(AccessControlledModel):
         if ownerId != user['_id']:
             raise AccessException('Current user is not the session owner')
 
+    def containsItem(self, sessionId, itemId, user):
+        session = self.load(sessionId, level=AccessType.READ, user=user)
+        return itemId in session['dataSet']
+
     def deleteSession(self, user, session):
         self.checkOwnership(user, session)
         self.remove(session)
         events.trigger('dm.sessionDeleted', info=session)
-
-    def addFilesToSession(self, user, session, dataSet):
-        """
-        Add some files to a session.
-
-        :param user: The user requesting the operation
-        :param session: The session to which to add the files
-        :param dataSet: A data set containing the files to be added
-        """
-        self.checkOwnership(user, session)
-
-        session['dataSet'].addFiles(dataSet)
-        self.save(session)
-
-        return session
-
-    def removeFilesFromSession(self, user, session, dataSet):
-        """
-        Remove files from a session.
-
-        :param user: The user requesting the operation
-        :param session: The session from which the files are to be removed
-        :param dataSet: A data set containing the files to be removed
-        """
-        self.checkOwnership(user, session)
-
-        session['dataSet'].removeFiles(dataSet)
-        self.save(session)
-
-        return session
 
     def getObject(self, user, session, path, children):
         self.checkOwnership(user, session)

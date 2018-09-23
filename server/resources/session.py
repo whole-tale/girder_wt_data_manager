@@ -70,6 +70,24 @@ class Session(Resource):
 
     @access.user
     @describeRoute(
+        Description('Modifies a session. Specifically, allows changing the dataSet of a session,'
+                    'which implies the ability to add/remove folders/files from a live session.'
+                    'Note that removal can fail if a file is in use.')
+            .param('id', 'The ID of the session.', paramType='path')
+            .param('dataSet', 'An optional data set to initialize the session with. '
+                              'A data set is a list of objects of the form '
+                              '{"itemId": string, "mountPath": string}.', paramType='query')
+            .errorResponse('ID was invalid.')
+            .errorResponse('Write access was denied for the session.', 403)
+    )
+    @filtermodel(model='session', plugin='wt_data_manager')
+    def modifySession(self, session, params):
+        user = self.getCurrentUser()
+        dataSet = json.loads(params.get('dataSet', '[]'))
+        return self.model('session', 'wt_data_manager').modifySession(user, session, dataSet)
+
+    @access.user
+    @describeRoute(
         Description('Get an object in a session using a path.')
             .param('id', 'The ID of the session.', paramType='path')
             .param('path', 'The path of the object, starting from the mount point.',
