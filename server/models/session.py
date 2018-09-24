@@ -103,12 +103,50 @@ class Session(AccessControlledModel):
         if ownerId != user['_id']:
             raise AccessException('Current user is not the session owner')
 
-    def containsItem(self, sessionId, itemId, user):
+    def containsItem(self, sessionId, objectId, user):
+        """
+        Check whether an item is accessible when the dataSet of this session is mounted
+        in a filesystem. This means that either this item or one of its ancestors is in
+        the dataSet
+        :param sessionId: The session in which to check the presence of the item
+        :param itemId: The item to find
+        :param user: The user owning the session
+        :return:
+        """
+        if isinstance(objectId, str):
+            objectId = objectid.ObjectId(objectId)
         session = self.load(sessionId, level=AccessType.READ, user=user)
+        idSet = set()
         for entry in session['dataSet']:
-            if entry['itemId'] == itemId:
-                return True
-        return False
+            idSet.add(objectid.ObjectId(entry['itemId']))
+
+        return self._containsItemOrAncestor(idSet, objectId)
+
+    def _containsItemOrAncestor(self, idSet, objectId):
+        if objectId is None:
+            return False
+        if objectId in idSet:
+            return True
+        return self._containsItemOrAncestor(idSet, self._getParentId(objectId))
+
+    def _getParentId(self, objectId):
+        """
+        Returns the id of the parent folder of a Girder folder or item. Returns None
+        if the folder has no parent. This does not handle collections. If a folder
+        is a child of a collection, it would be considered without a parent. This
+        reflects the fact that we can't properly mount collections at this point.
+        :param objectId: The id of the folder/item to get the parent for
+        :return:
+        """
+
+        folder = self.folderModel.findOne(query={'_id': objectId}, fields=['parentId'])
+        if folder is not None:
+            return folder['parentId']
+        item = self.itemModel.findOne(query={'_id': objectId}, fields=['folderId'])
+        if item is not None:
+            return item['folderId']
+
+        return None
 
     def deleteSession(self, user, session):
         self.checkOwnership(user, session)
