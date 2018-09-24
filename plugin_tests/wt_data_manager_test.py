@@ -30,24 +30,35 @@ class IntegrationTestCase(base.TestCase):
 
         self.user = self.model('user').createUser('wt-dm-test-user', 'password', 'Joe', 'User',
                                                   'juser@example.com')
-        self.testCollection = \
-            self.model('collection').createCollection('wt_dm_test_col', creator=self.user,
-                                                      public=False, reuseExisting=True)
-        self.testFolder = \
-            self.model('folder').createFolder(self.testCollection, 'wt_dm_test_fldr',
-                                              parentType='collection')
-
         self.tmpdir = tempfile.mkdtemp()
-        self.files = [self.createFile(n, 1 * MB, self.tmpdir) for n in range(1, 5)]
         self.assetstore = list(self.model('assetstore').find({}))[0]
-        self.model('assetstore').importData(self.assetstore, self.testFolder, 'folder',
-                                            {'importPath': self.tmpdir}, {}, self.user,
-                                            leafFoldersAsItems=False)
-        self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
+
+        [self.testCollection, self.testFolder, self.files, self.gfiles] = \
+            self.createStructure('test_')
+
+        [self.testCollection2, self.testFolder2, self.files2, self.gfiles2] = \
+            self.createStructure('test2_')
 
         self.apiroot = cherrypy.tree.apps['/api'].root.v1
 
         self.transferredFiles = set()
+
+    def createStructure(self, prefix):
+        collection = \
+            self.model('collection').createCollection('%s_wt_dm_test_col' % prefix,
+                                                      creator=self.user, public=False,
+                                                      reuseExisting=True)
+        folder = \
+            self.model('folder').createFolder(collection, '%s_wt_dm_test_fldr' % prefix,
+                                              parentType='collection')
+        files = [self.createFile('%s_%s' % (prefix, n), 1 * MB, self.tmpdir)
+                 for n in range(1, 5)]
+        self.model('assetstore').importData(self.assetstore, folder, 'folder',
+                                            {'importPath': self.tmpdir}, {}, self.user,
+                                            leafFoldersAsItems=False)
+        gfiles = [self.model('item').findOne({'name': file}) for file in files]
+
+        return (collection, folder, files, gfiles)
 
     def createHttpFile(self):
         params = {
@@ -309,3 +320,40 @@ class IntegrationTestCase(base.TestCase):
 
     def _getCachedItems(self):
         return list(self.model('item').find({'dm.cached': True}, user=self.user))
+
+    def test08StructureAccess(self):
+        # mount the root collection and try to lock files
+        dataSet = self.makeDataSet([{'_id': self.testFolder['_id'], 'name': 'fldr'}],
+                                   objectids=False)
+
+        resp = self.request('/dm/session', method='POST', user=self.user, params={
+            'dataSet': json.dumps(dataSet)
+        })
+        self.assertStatusOk(resp)
+        sessionId = resp.json['_id']
+
+        item = self.gfiles[0]
+
+        resp = self.request('/dm/lock', method='POST', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item['_id']),
+            'ownerId': str(self.user['_id'])
+        })
+        self.assertStatusOk(resp)
+        lockId = resp.json['_id']
+
+        resp = self.request('/dm/lock/%s' % lockId, method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
+
+        item = self.reloadItemRest(item)
+        self.assertEqual(item['dm']['lockCount'], 0)
+
+        item2 = self.gfiles2[0]
+
+        resp = self.request('/dm/lock', method='POST', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item2['_id']),
+            'ownerId': str(self.user['_id'])
+        })
+        # not in the collection
+        self.assertStatus(resp, 404)
