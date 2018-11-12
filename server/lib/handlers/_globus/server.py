@@ -39,12 +39,12 @@ class GCThread(threading.Thread):
 
 class Server:
     def __init__(self, clients):
+        self.clients = clients
         self.gcDir = self._getGCDir()
         self.sharedEndpoints = None
         self.sharedEndpointsLock = RLock()
         self.sharedEndpointsCreationLocks = {}
         self.globusRoot = Setting().get(PluginSettings.GLOBUS_ROOT_PATH, '/tmp/wt-globus')
-        self.clients = clients
 
     def start(self):
         # look for an endpoint name, which means that we've previously initialized a personal
