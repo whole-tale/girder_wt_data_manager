@@ -28,8 +28,8 @@ class TransferHandler:
     def _getFileFromItem(self):
         files = list(Models.itemModel.childFiles(item=self.item))
         if len(files) != 1:
-            raise Exception('Wrong number of files for item ' + str(self.item['_id']) +
-                            ': ' + str(len(files)))
+            raise Exception(
+                'Wrong number of files for item ' + str(self.item['_id']) + ': ' + str(len(files)))
         return Models.fileModel.load(files[0]['_id'], force=True)
 
     def run(self):

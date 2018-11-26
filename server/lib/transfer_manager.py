@@ -136,8 +136,8 @@ class SimpleTransferManager(TransferManager):
         psPath = self.pathMapper.getPSPath(itemId)
         files = list(Models.itemModel.childFiles(item=item))
         if len(files) != 1:
-            raise Exception('Wrong number of files for item ' + str(item['_id']) +
-                            ': ' + str(len(files)))
+            raise Exception(
+                'Wrong number of files for item ' + str(item['_id']) + ': ' + str(len(files)))
         file = Models.fileModel.load(files[0]['_id'], force=True)
 
         url = None
