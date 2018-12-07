@@ -27,7 +27,7 @@ class FileLikeUrlTransferHandler(UrlTransferHandler):
                                        size=self.flen, transferred=0, setTransferStartTime=True)
 
         self.mkdirs()
-        with open(self.psPath, 'w') as outf, self.openInputStream() as inf:
+        with open(self.psPath, 'wb') as outf, self.openInputStream() as inf:
             self.transferBytes(outf, inf)
 
     def openInputStream(self):
@@ -35,10 +35,9 @@ class FileLikeUrlTransferHandler(UrlTransferHandler):
 
     def transferBytes(self, outf, inf):
         crt = 0
-
         while True:
             buf = inf.read(FileLikeUrlTransferHandler.BUFSZ)
-            if buf == '':
+            if not buf:
                 break
             outf.write(buf)
             crt = crt + len(buf)

@@ -7,7 +7,7 @@ import time
 import os
 import cherrypy
 import json
-from httpserver import Server
+from .httpserver import Server
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
 
@@ -30,24 +30,35 @@ class IntegrationTestCase(base.TestCase):
 
         self.user = self.model('user').createUser('wt-dm-test-user', 'password', 'Joe', 'User',
                                                   'juser@example.com')
-        self.testCollection = \
-            self.model('collection').createCollection('wt_dm_test_col', creator=self.user,
-                                                      public=False, reuseExisting=True)
-        self.testFolder = \
-            self.model('folder').createFolder(self.testCollection, 'wt_dm_test_fldr',
-                                              parentType='collection')
-
         self.tmpdir = tempfile.mkdtemp()
-        self.files = [self.createFile(n, 1 * MB, self.tmpdir) for n in range(1, 5)]
         self.assetstore = list(self.model('assetstore').find({}))[0]
-        self.model('assetstore').importData(self.assetstore, self.testFolder, 'folder',
-                                            {'importPath': self.tmpdir}, {}, self.user,
-                                            leafFoldersAsItems=False)
-        self.gfiles = [self.model('item').findOne({'name': file}) for file in self.files]
+
+        [self.testCollection, self.testFolder, self.files, self.gfiles] = \
+            self.createStructure('test_')
+
+        [self.testCollection2, self.testFolder2, self.files2, self.gfiles2] = \
+            self.createStructure('test2_')
 
         self.apiroot = cherrypy.tree.apps['/api'].root.v1
 
         self.transferredFiles = set()
+
+    def createStructure(self, prefix):
+        collection = \
+            self.model('collection').createCollection('%s_wt_dm_test_col' % prefix,
+                                                      creator=self.user, public=False,
+                                                      reuseExisting=True)
+        folder = \
+            self.model('folder').createFolder(collection, '%s_wt_dm_test_fldr' % prefix,
+                                              parentType='collection')
+        files = [self.createFile('%s_%s' % (prefix, n), 1 * MB, self.tmpdir)
+                 for n in range(1, 5)]
+        self.model('assetstore').importData(self.assetstore, folder, 'folder',
+                                            {'importPath': self.tmpdir}, {}, self.user,
+                                            leafFoldersAsItems=False)
+        gfiles = [self.model('item').findOne({'name': file}) for file in files]
+
+        return (collection, folder, files, gfiles)
 
     def createHttpFile(self):
         params = {
@@ -64,11 +75,9 @@ class IntegrationTestCase(base.TestCase):
     def createFile(self, suffix, size, dir):
         name = 'file' + str(suffix)
         path = dir + '/' + name
-        f = open(path, 'w')
-        s = ''.join([chr(x) for x in range(256)])
-        for i in range(size // 256):
-            f.write(s)
-        f.close()
+        with open(path, 'wb') as f:
+            for i in range(size):
+                f.write(b'\0')
         return name
 
     def tearDown(self):
@@ -76,9 +85,9 @@ class IntegrationTestCase(base.TestCase):
 
     def makeDataSet(self, items, objectids=True):
         if objectids:
-            return [{'itemId': f['_id'], 'mountPoint': '/' + f['name']} for f in items]
+            return [{'itemId': f['_id'], 'mountPath': '/' + f['name']} for f in items]
         else:
-            return [{'itemId': str(f['_id']), 'mountPoint': '/' + f['name']} for f in items]
+            return [{'itemId': str(f['_id']), 'mountPath': '/' + f['name']} for f in items]
 
     def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
@@ -173,7 +182,7 @@ class IntegrationTestCase(base.TestCase):
             time.sleep(0.1)
             max_iters -= 1
             if rest:
-                item = self.reloadItemRest(sessionId, item)
+                item = self.reloadItemRest(item)
             else:
                 item = self.reloadItem(item)
         self.assertTrue(False, 'No file found after about 30s')
@@ -197,7 +206,6 @@ class IntegrationTestCase(base.TestCase):
         })
         self.assertStatusOk(resp)
         self.assertEqual(sessionId, str(resp.json['_id']))
-
 
         item = self.gfiles[0]
 
@@ -235,8 +243,7 @@ class IntegrationTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(lockId, str(resp.json['_id']))
 
-        item = self.reloadItemRest(sessionId, item)
-
+        item = self.reloadItemRest(item)
         self.assertHasKeys(item, ['dm'])
 
         psPath = self.waitForFile(item, rest=True, sessionId=sessionId)
@@ -272,14 +279,14 @@ class IntegrationTestCase(base.TestCase):
         resp = self.request('/dm/lock/%s' % lockId, method='DELETE', user=self.user)
         self.assertStatusOk(resp)
 
-        item = self.reloadItemRest(sessionId, item)
+        item = self.reloadItemRest(item)
         self.assertEqual(item['dm']['lockCount'], 0)
 
         resp = self.request('/dm/session/%s' % sessionId, method='DELETE', user=self.user)
         self.assertStatusOk(resp)
 
-    def reloadItemRest(self, sessionId, item):
-        resp = self.request('/dm/session/%s/item/%s' % (sessionId, item['_id']), method='GET',
+    def reloadItemRest(self, item):
+        resp = self.request('/item/{_id}'.format(**item), method='GET',
                             user=self.user)
         self.assertStatusOk(resp)
         return resp.json
@@ -300,7 +307,6 @@ class IntegrationTestCase(base.TestCase):
         self.model('setting').set('dm.private_storage_capacity', int(2.2 * MB))
         self.model('setting').set('dm.gc_collect_start_fraction', 0.5)  # if over 1.1 MB
         self.model('setting').set('dm.gc_collect_end_fraction', 0.5)   # if under 1.1 MB
-
         gc._collect()
         # should have cleaned one file
         remainingCount = 0
@@ -312,6 +318,42 @@ class IntegrationTestCase(base.TestCase):
         self.assertEqual(1, len(self._getCachedItems()))
         gc.resume()
 
-
     def _getCachedItems(self):
         return list(self.model('item').find({'dm.cached': True}, user=self.user))
+
+    def test08StructureAccess(self):
+        # mount the root collection and try to lock files
+        dataSet = self.makeDataSet([{'_id': self.testFolder['_id'], 'name': 'fldr'}],
+                                   objectids=False)
+
+        resp = self.request('/dm/session', method='POST', user=self.user, params={
+            'dataSet': json.dumps(dataSet)
+        })
+        self.assertStatusOk(resp)
+        sessionId = resp.json['_id']
+
+        item = self.gfiles[0]
+
+        resp = self.request('/dm/lock', method='POST', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item['_id']),
+            'ownerId': str(self.user['_id'])
+        })
+        self.assertStatusOk(resp)
+        lockId = resp.json['_id']
+
+        resp = self.request('/dm/lock/%s' % lockId, method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
+
+        item = self.reloadItemRest(item)
+        self.assertEqual(item['dm']['lockCount'], 0)
+
+        item2 = self.gfiles2[0]
+
+        resp = self.request('/dm/lock', method='POST', user=self.user, params={
+            'sessionId': sessionId,
+            'itemId': str(item2['_id']),
+            'ownerId': str(self.user['_id'])
+        })
+        # not in the collection
+        self.assertStatus(resp, 404)

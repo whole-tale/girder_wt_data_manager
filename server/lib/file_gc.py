@@ -199,5 +199,5 @@ class LRUSortingScheme(CollectionSortingScheme):
         if Lock.FIELD_LAST_UNLOCKED in item:
             return item[Lock.FIELD_LAST_UNLOCKED]
         else:
-            logger.warn('Item %s does not have a dm.lastUnlocked field.' % item['_id'])
+            logger.warning('Item %s does not have a dm.lastUnlocked field.' % item['_id'])
             return BEGINNING_OF_TIME

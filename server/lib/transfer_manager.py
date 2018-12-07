@@ -104,7 +104,7 @@ class TransferManager:
                 self.startTransfer(user, item['itemId'], item['sessionId'])
             except Exception as ex:
                 logger.warning('Failed to strart transfer for itemId %s. Reason: %s'
-                               % (item['itemId'], ex.message))
+                               % (item['itemId'], str(ex)))
 
     def getUser(self, userId):
         return Models.userModel.load(userId, force=True)

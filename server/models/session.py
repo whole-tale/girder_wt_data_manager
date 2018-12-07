@@ -43,7 +43,7 @@ class Session(AccessControlledModel):
         """
         Create a new session.
 
-        :param user: The user creating the job.
+        :param user: The user creating the session.
         :type user: dict or None
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
          of dictionaries with two keys: 'itemId', and 'mountPath'
@@ -63,6 +63,25 @@ class Session(AccessControlledModel):
         events.trigger('dm.sessionCreated', info=session)
 
         return session
+
+    def modifySession(self, user, session, dataSet):
+        """
+        Modify an existing session.
+
+        :param user: Must be the owner of the session
+        :type user: dict or None
+        :param session: The session that is being modified
+        :type session: dict
+        :param dataSet: The new dataSet to associate with this session. See createSession for
+         details
+        :type dataSet: list
+        :return:
+        """
+
+        session['dataSet'] = dataSet
+        session = self.save(session)
+
+        events.trigger('dm.sessionModified', info=session)
 
     def loadObjects(self, dataSet):
         for entry in dataSet:
@@ -84,40 +103,55 @@ class Session(AccessControlledModel):
         if ownerId != user['_id']:
             raise AccessException('Current user is not the session owner')
 
+    def containsItem(self, sessionId, objectId, user):
+        """
+        Check whether an item is accessible when the dataSet of this session is mounted
+        in a filesystem. This means that either this item or one of its ancestors is in
+        the dataSet
+        :param sessionId: The session in which to check the presence of the item
+        :param itemId: The item to find
+        :param user: The user owning the session
+        :return:
+        """
+        if isinstance(objectId, str):
+            objectId = objectid.ObjectId(objectId)
+        session = self.load(sessionId, level=AccessType.READ, user=user)
+        idSet = set()
+        for entry in session['dataSet']:
+            idSet.add(objectid.ObjectId(entry['itemId']))
+
+        return self._containsItemOrAncestor(idSet, objectId)
+
+    def _containsItemOrAncestor(self, idSet, objectId):
+        if objectId is None:
+            return False
+        if objectId in idSet:
+            return True
+        return self._containsItemOrAncestor(idSet, self._getParentId(objectId))
+
+    def _getParentId(self, objectId):
+        """
+        Returns the id of the parent folder of a Girder folder or item. Returns None
+        if the folder has no parent. This does not handle collections. If a folder
+        is a child of a collection, it would be considered without a parent. This
+        reflects the fact that we can't properly mount collections at this point.
+        :param objectId: The id of the folder/item to get the parent for
+        :return:
+        """
+
+        folder = self.folderModel.findOne(query={'_id': objectId}, fields=['parentId'])
+        if folder is not None:
+            return folder['parentId']
+        item = self.itemModel.findOne(query={'_id': objectId}, fields=['folderId'])
+        if item is not None:
+            return item['folderId']
+
+        return None
+
     def deleteSession(self, user, session):
         self.checkOwnership(user, session)
         self.remove(session)
         events.trigger('dm.sessionDeleted', info=session)
-
-    def addFilesToSession(self, user, session, dataSet):
-        """
-        Add some files to a session.
-
-        :param user: The user requesting the operation
-        :param session: The session to which to add the files
-        :param dataSet: A data set containing the files to be added
-        """
-        self.checkOwnership(user, session)
-
-        session['dataSet'].addFiles(dataSet)
-        self.save(session)
-
-        return session
-
-    def removeFilesFromSession(self, user, session, dataSet):
-        """
-        Remove files from a session.
-
-        :param user: The user requesting the operation
-        :param session: The session from which the files are to be removed
-        :param dataSet: A data set containing the files to be removed
-        """
-        self.checkOwnership(user, session)
-
-        session['dataSet'].removeFiles(dataSet)
-        self.save(session)
-
-        return session
 
     def getObject(self, user, session, path, children):
         self.checkOwnership(user, session)
@@ -166,9 +200,9 @@ class Session(AccessControlledModel):
         raise LookupError("No such object: " + id)
 
     def listChildren(self, item):
-        l = list(self.folderModel.childFolders(item, 'folder'))
-        l.extend(self.folderModel.childItems(item))
-        return l
+        children = list(self.folderModel.childFolders(item, 'folder'))
+        children.extend(self.folderModel.childItems(item))
+        return children
 
     def findObjectInFolder(self, container, name):
         parentId = container['_id']
@@ -186,8 +220,8 @@ class Session(AccessControlledModel):
         raise LookupError('No such object: ' + name)
 
     def splitPath(self, path):
-        l = []
+        current_path = []
         while path != '' and path != '/':
             (path, tail) = os.path.split(path)
-            l.insert(0, tail)
-        return l
+            current_path.insert(0, tail)
+        return current_path

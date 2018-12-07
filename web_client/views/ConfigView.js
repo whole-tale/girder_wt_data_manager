@@ -9,20 +9,6 @@ import ConfigViewTemplate from '../templates/configView.pug';
 import '../stylesheets/configView.styl';
 
 var ConfigView = View.extend({
-    SETTING_KEYS: [
-        'dm.private_storage_path',
-        'dm.private_storage_capacity',
-        'dm.gc_run_interval',
-        'dm.gc_collect_start_fraction',
-        'dm.gc_collect_end_fraction',
-        'dm.globus_root_path',
-        'dm.globus_gc_dir'
-    ],
-
-    settingControlId: function (key) {
-        return '#g-wt-dm-' + key.substring(3).replace(/_/g, '-');
-    },
-
     events: {
         'submit .g-wt-dm-config-form': function (event) {
             event.preventDefault();
@@ -50,6 +36,20 @@ var ConfigView = View.extend({
             this.settingVals = resp;
             this.render();
         }, this));
+    },
+
+    SETTING_KEYS: [
+        'dm.private_storage_path',
+        'dm.private_storage_capacity',
+        'dm.gc_run_interval',
+        'dm.gc_collect_start_fraction',
+        'dm.gc_collect_end_fraction',
+        'dm.globus_root_path',
+        'dm.globus_gc_dir'
+    ],
+
+    settingControlId: function (key) {
+        return '#g-wt-dm-' + key.substring(3).replace(/_/g, '-');
     },
 
     render: function () {
@@ -105,4 +105,3 @@ var ConfigView = View.extend({
 });
 
 export default ConfigView;
-
