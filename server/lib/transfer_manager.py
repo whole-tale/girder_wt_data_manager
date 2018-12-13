@@ -27,8 +27,8 @@ class TransferThread(threading.Thread):
 
 class GirderDownloadTransferHandler(TransferHandler):
 
-    def __init__(self, transferId, itemId, psPath):
-        TransferHandler.__init__(self, transferId, itemId, psPath)
+    def __init__(self, transferId, itemId, psPath, user):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user)
 
     def transfer(self):
         file = self._getFileFromItem()
@@ -160,7 +160,7 @@ class SimpleTransferManager(TransferManager):
                 raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
             return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
         else:
-            return GirderDownloadTransferHandler(transferId, itemId, psPath)
+            return GirderDownloadTransferHandler(transferId, itemId, psPath, user)
 
 
 class DelayingSimpleTransferManager(SimpleTransferManager):
