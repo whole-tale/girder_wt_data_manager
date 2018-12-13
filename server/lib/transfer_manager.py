@@ -2,7 +2,6 @@ from ..constants import TransferStatus
 from .handler_factory import HandlerFactory
 from .tm_utils import TransferHandler, Models
 import threading
-import time
 import os
 import traceback
 from girder.utility import assetstore_utilities
@@ -53,22 +52,6 @@ class GirderDownloadTransferHandler(TransferHandler):
             outf.write(chunk)
             crt = crt + len(chunk)
             self.updateTransferProgress(self.flen, crt)
-
-
-class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
-    DELAY = 1
-
-    def __init__(self, transferId, itemId, psPath):
-        GirderDownloadTransferHandler.__init__(self, transferId, itemId, psPath)
-
-    def transferBytes(self, outf, stream):
-        crt = 0
-        for chunk in stream():
-            outf.write(chunk)
-            crt = crt + len(chunk)
-            self.updateTransferProgress(self.flen, crt)
-            if SlowGirderDownloadTransferHandler.DELAY > 0:
-                time.sleep(SlowGirderDownloadTransferHandler.DELAY)
 
 
 class TransferManager:
@@ -161,12 +144,3 @@ class SimpleTransferManager(TransferManager):
             return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
         else:
             return GirderDownloadTransferHandler(transferId, itemId, psPath, user)
-
-
-class DelayingSimpleTransferManager(SimpleTransferManager):
-    def __init__(self, settings, pathMapper):
-        SimpleTransferManager.__init__(self, settings, pathMapper)
-
-    def getTransferHandler(self, transferId, itemId):
-        return SlowGirderDownloadTransferHandler(transferId, itemId,
-                                                 self.pathMapper.getPSPath(itemId))
