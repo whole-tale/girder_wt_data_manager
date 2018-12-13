@@ -54,7 +54,6 @@ def load(info):
     fs = FS()
 
     pathMapper = path_mapper.PathMapper(settings)
-    # transferManager = transfer_manager.DelayingSimpleTransferManager(settings, pathMapper)
     transferManager = transfer_manager.SimpleTransferManager(settings, pathMapper)
 
     # a GC that does nothing
@@ -70,6 +69,7 @@ def load(info):
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
     info['apiRoot'].dm.route('GET', ('session', ':id',), session.getSession)
     info['apiRoot'].dm.route('POST', ('session',), session.createSession)
+    info['apiRoot'].dm.route('PUT', ('session', ':id',), session.modifySession)
     info['apiRoot'].dm.route('DELETE', ('session', ':id'), session.removeSession)
 
     info['apiRoot'].dm.route('POST', ('lock',), lock.acquireLock)

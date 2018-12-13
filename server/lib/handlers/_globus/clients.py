@@ -21,7 +21,7 @@ class Clients:
         self.transferClient = None
         self.authClient = None
 
-    def getTransferClient(self, check: bool=False):
+    def getTransferClient(self, check: bool = False):
         if self.transferClient is None:
             authz = self.getAppTransferAuthorizer()
             self.transferClient = TransferClient(authz)

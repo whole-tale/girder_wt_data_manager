@@ -47,7 +47,7 @@ class Session(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Removes an existing session.')
+        Description('Remove an existing session.')
         .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.WRITE)
         .errorResponse('ID was invalid.')
         .errorResponse('Access was denied for the session.', 403)
@@ -58,7 +58,7 @@ class Session(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Creates a session.')
+        Description('Create a session.')
         .jsonParam(
             'dataSet', 'An optional data set to initialize the session with. '
             'A data set is a list of objects of the form '
@@ -70,9 +70,10 @@ class Session(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Modifies a session. Specifically, allows changing the dataSet of a session,'
-                    'which implies the ability to add/remove folders/files from a live session.'
-                    'Note that removal can fail if a file is in use.')
+        Description('Modify a session.')
+        .notes('Specifically, allows changing the dataSet of a session, '
+               'which implies the ability to add/remove folders/files from a live session. '
+               'Note that removal can fail if a file is in use.')
         .modelParam('id', 'The ID of the session.', model=SessionModel, level=AccessType.ADMIN)
         .jsonParam('dataSet', 'An optional data set to initialize the session with. '
                               'A data set is a list of objects of the form '

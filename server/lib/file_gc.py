@@ -71,12 +71,12 @@ class CollectorThread(Thread):
 class PeriodicFileGC(FileGC):
     def __init__(self, settings, pathMapper, collectionStrategy):
         FileGC.__init__(self, settings, pathMapper)
+        self.paused = False
+        self.collectLock = threading.Lock()
         self.collectionStrategy = collectionStrategy
         self.psInfo = PSInfo()
         self.thread = CollectorThread(settings, self)
         self.thread.start()
-        self.paused = False
-        self.collectLock = threading.Lock()
 
     def collect(self):
         with self.collectLock:

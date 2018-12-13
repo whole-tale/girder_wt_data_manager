@@ -2,7 +2,6 @@ from ..constants import TransferStatus
 from .handler_factory import HandlerFactory
 from .tm_utils import TransferHandler, Models
 import threading
-import time
 import os
 import traceback
 from girder.utility import assetstore_utilities
@@ -27,8 +26,8 @@ class TransferThread(threading.Thread):
 
 class GirderDownloadTransferHandler(TransferHandler):
 
-    def __init__(self, transferId, itemId, psPath):
-        TransferHandler.__init__(self, transferId, itemId, psPath)
+    def __init__(self, transferId, itemId, psPath, user):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user)
 
     def transfer(self):
         file = self._getFileFromItem()
@@ -53,22 +52,6 @@ class GirderDownloadTransferHandler(TransferHandler):
             outf.write(chunk)
             crt = crt + len(chunk)
             self.updateTransferProgress(self.flen, crt)
-
-
-class SlowGirderDownloadTransferHandler(GirderDownloadTransferHandler):
-    DELAY = 1
-
-    def __init__(self, transferId, itemId, psPath):
-        GirderDownloadTransferHandler.__init__(self, transferId, itemId, psPath)
-
-    def transferBytes(self, outf, stream):
-        crt = 0
-        for chunk in stream():
-            outf.write(chunk)
-            crt = crt + len(chunk)
-            self.updateTransferProgress(self.flen, crt)
-            if SlowGirderDownloadTransferHandler.DELAY > 0:
-                time.sleep(SlowGirderDownloadTransferHandler.DELAY)
 
 
 class TransferManager:
@@ -136,8 +119,8 @@ class SimpleTransferManager(TransferManager):
         psPath = self.pathMapper.getPSPath(itemId)
         files = list(Models.itemModel.childFiles(item=item))
         if len(files) != 1:
-            raise Exception('Wrong number of files for item ' + str(item['_id']) +
-                            ': ' + str(len(files)))
+            raise Exception(
+                'Wrong number of files for item ' + str(item['_id']) + ': ' + str(len(files)))
         file = Models.fileModel.load(files[0]['_id'], force=True)
 
         url = None
@@ -160,13 +143,4 @@ class SimpleTransferManager(TransferManager):
                 raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
             return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
         else:
-            return GirderDownloadTransferHandler(transferId, itemId, psPath)
-
-
-class DelayingSimpleTransferManager(SimpleTransferManager):
-    def __init__(self, settings, pathMapper):
-        SimpleTransferManager.__init__(self, settings, pathMapper)
-
-    def getTransferHandler(self, transferId, itemId):
-        return SlowGirderDownloadTransferHandler(transferId, itemId,
-                                                 self.pathMapper.getPSPath(itemId))
+            return GirderDownloadTransferHandler(transferId, itemId, psPath, user)
