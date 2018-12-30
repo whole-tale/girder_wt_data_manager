@@ -96,6 +96,9 @@ class Session(AccessControlledModel):
                 entry['obj'] = self.itemModel.load(entry['itemId'], force=True)
 
     def checkOwnership(self, user, session):
+        if user['admin']:
+            # admin owns everything
+            return
         if 'ownerId' in session:
             ownerId = session['ownerId']
         else:
