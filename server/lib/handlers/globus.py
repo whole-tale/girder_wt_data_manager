@@ -31,6 +31,9 @@ class Globus(TransferHandler):
         tmpName = str(uuid.uuid4())
         transfer = TransferData(tc, self._getSourceEndpointId(), userEndpointId,
                                 label=str(self.transferId))
+        transfer['notify_on_succeeded'] = False
+        transfer['notify_on_failed'] = False
+        transfer['notify_on_inactive'] = False
         transfer.add_item(self._getSourcePath(), tmpName)
         res = tc.submit_transfer(transfer)
         if res['code'] != 'Accepted':
