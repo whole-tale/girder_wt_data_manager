@@ -62,11 +62,16 @@ class Session(Resource):
         .jsonParam(
             'dataSet', 'An optional data set to initialize the session with. '
             'A data set is a list of objects of the form '
-            '{"itemId": string, "mountPath": string}.', paramType='query', schema=dataSetSchema)
+            '{"itemId": string, "mountPath": string}.', paramType='query', schema=dataSetSchema,
+            required=False)
+        .modelParam('taleId', "An optional id of a Tale. If provided, Tale's involatileData will "
+                    "be used to initialize the session instead of the dataSet parameter.",
+                    model='tale', plugin='wholetale', level=AccessType.READ, paramType='query',
+                    required=False)
     )
-    def createSession(self, dataSet):
+    def createSession(self, dataSet, tale):
         user = self.getCurrentUser()
-        return SessionModel().createSession(user, dataSet)
+        return SessionModel().createSession(user, dataSet=dataSet, tale=tale)
 
     @access.user
     @autoDescribeRoute(

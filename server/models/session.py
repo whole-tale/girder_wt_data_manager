@@ -13,8 +13,9 @@ from girder import events
 class Session(AccessControlledModel):
     def initialize(self):
         self.name = 'session'
-        self.exposeFields(level=AccessType.READ,
-                          fields={'_id', 'status', 'ownerId', 'dataSet', 'error', 'seq'})
+        self.exposeFields(
+            level=AccessType.READ,
+            fields={'_id', 'status', 'ownerId', 'dataSet', 'error', 'seq', 'taleId'})
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
@@ -39,7 +40,7 @@ class Session(AccessControlledModel):
                                                 limit=limit, offset=offset):
             yield r
 
-    def createSession(self, user, dataSet=None):
+    def createSession(self, user, dataSet=None, tale=None):
         """
         Create a new session.
 
@@ -48,19 +49,26 @@ class Session(AccessControlledModel):
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
          of dictionaries with two keys: 'itemId', and 'mountPath'
         :type dataSet: list
+        :param tale: If a tale is provided, use dataSet associated with it to initialize
+         a session.
+        :type tale: dict or None
         """
 
         session = {
-            '_id': objectid.ObjectId(),
             'ownerId': user['_id'],
-            'dataSet': dataSet,
-            'seq': 0
+            'seq': 0,
+            'taleId': None
         }
 
-        self.setUserAccess(session, user=user, level=AccessType.ADMIN)
+        if tale:
+            session['dataSet'] = tale['involatileData']
+            session['taleId'] = tale['_id']
+        else:
+            session['dataSet'] = dataSet
 
-        session = self.save(session)
-
+        session = self.setUserAccess(session, user=user, level=AccessType.ADMIN, save=True)
+        # TODO: is the custom event really necessary? save in here ^^ already triggers
+        #  'model.session.save', with info=session
         events.trigger('dm.sessionCreated', info=session)
 
         return session
