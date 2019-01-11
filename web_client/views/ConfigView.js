@@ -44,8 +44,6 @@ var ConfigView = View.extend({
         'dm.gc_run_interval',
         'dm.gc_collect_start_fraction',
         'dm.gc_collect_end_fraction',
-        'dm.globus_root_path',
-        'dm.globus_gc_dir'
     ],
 
     settingControlId: function (key) {
