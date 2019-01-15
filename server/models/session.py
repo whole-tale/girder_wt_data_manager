@@ -175,7 +175,7 @@ class Session(AccessControlledModel):
     def getObject(self, user, session, path, children):
         self.checkOwnership(user, session)
 
-        (tail, rootContainer) = self.findRootContainer(session, path)
+        (tail, rootContainer) = self.findRootContainer(session, path, user)
         crtObj = rootContainer
 
         if tail is not None:
@@ -193,26 +193,26 @@ class Session(AccessControlledModel):
                 'object': crtObj
             }
 
-    def findRootContainer(self, session, path):
+    def findRootContainer(self, session, path, user=None):
         for obj in session['dataSet']:
             rootPath = obj['mountPath']
             if path == rootPath:
-                return (None, self.loadObject(str(obj['itemId'])))
+                return (None, self.loadObject(str(obj['itemId']), user=user))
             if rootPath[-1] != '/':
                 # add a slash at the end to avoid situations like
                 # rootPath=/name being matched for path=/nameAndStuff/...
                 rootPath = rootPath + '/'
             if path.startswith(rootPath):
-                return (path[len(rootPath):], self.loadObject(str(obj['itemId'])))
+                return (path[len(rootPath):], self.loadObject(str(obj['itemId']), user=user))
         raise LookupError('No such object: ' + path)
 
-    def loadObject(self, id):
-        item = self.folderModel.load(id, level=AccessType.READ)
+    def loadObject(self, id, user=None):
+        item = self.folderModel.load(id, level=AccessType.READ, user=user)
         if item is not None:
             item['type'] = 'folder'
             return item
         else:
-            item = self.itemModel.load(id, level=AccessType.READ)
+            item = self.itemModel.load(id, level=AccessType.READ, user=user)
             if item is not None:
                 item['type'] = 'file'
                 return item
