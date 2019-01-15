@@ -14,7 +14,7 @@ class Session(AccessControlledModel):
     def initialize(self):
         self.name = 'session'
         self.exposeFields(level=AccessType.READ,
-                          fields={'_id', 'status', 'ownerId', 'dataSet', 'error'})
+                          fields={'_id', 'status', 'ownerId', 'dataSet', 'error', 'seq'})
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
@@ -53,7 +53,8 @@ class Session(AccessControlledModel):
         session = {
             '_id': objectid.ObjectId(),
             'ownerId': user['_id'],
-            'dataSet': dataSet
+            'dataSet': dataSet,
+            'seq': 0
         }
 
         self.setUserAccess(session, user=user, level=AccessType.ADMIN)
@@ -78,8 +79,15 @@ class Session(AccessControlledModel):
         :return:
         """
 
-        session['dataSet'] = dataSet
-        session = self.save(session)
+        self.checkOwnership(user, session)
+        self.update(
+            query={'_id': session['_id']},
+            update={
+                '$inc': {'seq': 1},
+                '$set': {'dataSet': dataSet}
+            },
+            multi=False)
+        session = self.load(session['_id'], user=user)
 
         events.trigger('dm.sessionModified', info=session)
 
