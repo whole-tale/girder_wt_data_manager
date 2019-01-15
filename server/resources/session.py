@@ -103,11 +103,11 @@ class Session(Resource):
                default=False)
         .errorResponse('ID was invalid.')
         .errorResponse('Read access was denied for the session.', 403)
-        .errorResponse('Object was not found.', 401)
+        .errorResponse('Object was not found.', 400)
     )
     def getObject(self, session, path, children):
         user = self.getCurrentUser()
         try:
             return SessionModel().getObject(user, session, path, children)
         except LookupError as ex:
-            raise RestException(str(ex), code=401)
+            raise RestException(str(ex), code=400)
