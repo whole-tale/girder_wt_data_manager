@@ -4,3 +4,4 @@ version: 0.6.0dev0
 dependencies:
     - oauth
     - globus_handler
+    - wholetale
