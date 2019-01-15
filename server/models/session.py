@@ -96,8 +96,8 @@ class Session(AccessControlledModel):
             },
             multi=False)
         session = self.load(session['_id'], user=user)
-
         events.trigger('dm.sessionModified', info=session)
+        return session
 
     def loadObjects(self, dataSet):
         for entry in dataSet:
