@@ -61,7 +61,7 @@ class Session(AccessControlledModel):
         }
 
         if tale:
-            session['dataSet'] = tale['involatileData']
+            session['dataSet'] = tale['dataSet']
             session['taleId'] = tale['_id']
         else:
             session['dataSet'] = dataSet
