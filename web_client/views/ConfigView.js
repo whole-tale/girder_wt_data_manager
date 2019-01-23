@@ -43,7 +43,7 @@ var ConfigView = View.extend({
         'dm.private_storage_capacity',
         'dm.gc_run_interval',
         'dm.gc_collect_start_fraction',
-        'dm.gc_collect_end_fraction',
+        'dm.gc_collect_end_fraction'
     ],
 
     settingControlId: function (key) {

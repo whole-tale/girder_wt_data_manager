@@ -13,8 +13,9 @@ from girder import events
 class Session(AccessControlledModel):
     def initialize(self):
         self.name = 'session'
-        self.exposeFields(level=AccessType.READ,
-                          fields={'_id', 'status', 'ownerId', 'dataSet', 'error', 'seq'})
+        self.exposeFields(
+            level=AccessType.READ,
+            fields={'_id', 'status', 'ownerId', 'dataSet', 'error', 'seq', 'taleId'})
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
@@ -39,7 +40,7 @@ class Session(AccessControlledModel):
                                                 limit=limit, offset=offset):
             yield r
 
-    def createSession(self, user, dataSet=None):
+    def createSession(self, user, dataSet=None, tale=None):
         """
         Create a new session.
 
@@ -48,19 +49,26 @@ class Session(AccessControlledModel):
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
          of dictionaries with two keys: 'itemId', and 'mountPath'
         :type dataSet: list
+        :param tale: If a tale is provided, use dataSet associated with it to initialize
+         a session.
+        :type tale: dict or None
         """
 
         session = {
-            '_id': objectid.ObjectId(),
             'ownerId': user['_id'],
-            'dataSet': dataSet,
-            'seq': 0
+            'seq': 0,
+            'taleId': None
         }
 
-        self.setUserAccess(session, user=user, level=AccessType.ADMIN)
+        if tale:
+            session['dataSet'] = tale['dataSet']
+            session['taleId'] = tale['_id']
+        else:
+            session['dataSet'] = dataSet
 
-        session = self.save(session)
-
+        session = self.setUserAccess(session, user=user, level=AccessType.ADMIN, save=True)
+        # TODO: is the custom event really necessary? save in here ^^ already triggers
+        #  'model.session.save', with info=session
         events.trigger('dm.sessionCreated', info=session)
 
         return session
@@ -88,8 +96,8 @@ class Session(AccessControlledModel):
             },
             multi=False)
         session = self.load(session['_id'], user=user)
-
         events.trigger('dm.sessionModified', info=session)
+        return session
 
     def loadObjects(self, dataSet):
         for entry in dataSet:
@@ -167,7 +175,7 @@ class Session(AccessControlledModel):
     def getObject(self, user, session, path, children):
         self.checkOwnership(user, session)
 
-        (tail, rootContainer) = self.findRootContainer(session, path)
+        (tail, rootContainer) = self.findRootContainer(session, path, user)
         crtObj = rootContainer
 
         if tail is not None:
@@ -185,26 +193,26 @@ class Session(AccessControlledModel):
                 'object': crtObj
             }
 
-    def findRootContainer(self, session, path):
+    def findRootContainer(self, session, path, user=None):
         for obj in session['dataSet']:
             rootPath = obj['mountPath']
             if path == rootPath:
-                return (None, self.loadObject(str(obj['itemId'])))
+                return (None, self.loadObject(str(obj['itemId']), user=user))
             if rootPath[-1] != '/':
                 # add a slash at the end to avoid situations like
                 # rootPath=/name being matched for path=/nameAndStuff/...
                 rootPath = rootPath + '/'
             if path.startswith(rootPath):
-                return (path[len(rootPath):], self.loadObject(str(obj['itemId'])))
+                return (path[len(rootPath):], self.loadObject(str(obj['itemId']), user=user))
         raise LookupError('No such object: ' + path)
 
-    def loadObject(self, id):
-        item = self.folderModel.load(id, level=AccessType.READ)
+    def loadObject(self, id, user=None):
+        item = self.folderModel.load(id, level=AccessType.READ, user=user)
         if item is not None:
             item['type'] = 'folder'
             return item
         else:
-            item = self.itemModel.load(id, level=AccessType.READ)
+            item = self.itemModel.load(id, level=AccessType.READ, user=user)
             if item is not None:
                 item['type'] = 'file'
                 return item

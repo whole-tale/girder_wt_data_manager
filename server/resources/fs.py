@@ -20,7 +20,7 @@ class FS(Resource):
         Description('Returns an unfiltered item')
         .param('itemId', 'The ID of the item.', paramType='path')
         .errorResponse('ID was invalid.')
-        .errorResponse('Object was not found.', 401)
+        .errorResponse('Object was not found.', 400)
     )
     def getItemUnfiltered(self, itemId, params):
         user = self.getCurrentUser()
@@ -32,7 +32,7 @@ class FS(Resource):
         Description('Returns an unfiltered object')
         .param('itemId', 'The ID of the object.', paramType='path')
         .errorResponse('ID was invalid.')
-        .errorResponse('Object was not found.', 401)
+        .errorResponse('Object was not found.', 400)
     )
     def getRawObject(self, id, params):
         user = self.getCurrentUser()
