@@ -7,6 +7,7 @@ import time
 import os
 import cherrypy
 import json
+from bson import ObjectId
 import shutil
 from .httpserver import Server
 # oh, boy; you'd think we've learned from #include...
@@ -198,7 +199,6 @@ class IntegrationTestCase(base.TestCase):
         self.assertStatusOk(resp)
 
         from girder.plugins.wholetale.models.tale import Tale
-        from bson import ObjectId
         tale = Tale().createTale({'_id': ObjectId()}, dataSet, title='blah',
                                  creator=self.user)
 
@@ -447,3 +447,34 @@ class IntegrationTestCase(base.TestCase):
         })
         # not in the collection
         self.assertStatus(resp, 404)
+
+    def test09TaleUpdateEventHandler(self):
+        dataSet = self.makeDataSet([{'_id': self.testFolder['_id'], 'name': 'fldr'}],
+                                   objectids=False)
+        from girder.plugins.wholetale.models.tale import Tale
+        tale = Tale().createTale({'_id': ObjectId()}, dataSet, title='test09',
+                                 creator=self.user)
+
+        resp = self.request(
+            path='/dm/session', method='POST', user=self.user,
+            params={'taleId': str(tale['_id'])}
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['dataSet'], dataSet)
+
+        tale['dataSet'].pop(0)
+        tale = Tale().save(tale)
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session), method='GET',
+            user=self.user
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['dataSet'], tale['dataSet'])
+
+        Tale().remove(tale)  # TODO: This should fail, since the session is up
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='DELETE', user=self.user)
+        self.assertStatusOk(resp)

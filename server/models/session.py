@@ -7,6 +7,7 @@ from bson import objectid
 from girder.constants import AccessType
 from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import AccessControlledModel, AccessException
+from girder.models.user import User
 from girder import events
 
 
@@ -19,6 +20,8 @@ class Session(AccessControlledModel):
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.lockModel = ModelImporter.model('lock', 'wt_data_manager')
+
+        events.bind('model.tale.save.after', 'wholetale', self.updateTaleSession)
 
     def validate(self, session):
         return session
@@ -98,6 +101,14 @@ class Session(AccessControlledModel):
         session = self.load(session['_id'], user=user)
         events.trigger('dm.sessionModified', info=session)
         return session
+
+    def updateTaleSession(self, event):
+        if not event.info:
+            return
+        tale = event.info
+        for session in self.find({'taleId': tale['_id']}):
+            user = User().load(session['ownerId'], force=True)
+            self.modifySession(user, session, tale['dataSet'])
 
     def loadObjects(self, dataSet):
         for entry in dataSet:
