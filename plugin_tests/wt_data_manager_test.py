@@ -7,6 +7,8 @@ import time
 import os
 import cherrypy
 import json
+from bson import ObjectId
+import shutil
 from .httpserver import Server
 # oh, boy; you'd think we've learned from #include...
 # from plugins.wt_data_manager.server.constants import PluginSettings
@@ -28,9 +30,13 @@ class IntegrationTestCase(base.TestCase):
     def setUp(self):
         base.TestCase.setUp(self)
 
-        self.user = self.model('user').createUser('wt-dm-test-user', 'password', 'Joe', 'User',
-                                                  'juser@example.com')
-        self.tmpdir = tempfile.mkdtemp()
+        self.admin = self.model('user').createUser(
+            'wt-dm-admin-user', 'password', 'Root', 'vonKlompf', 'jadmin@example.com')
+        self.user = self.model('user').createUser(
+            'wt-dm-test-user', 'password', 'Joe', 'User', 'juser@example.com')
+        self.user2 = self.model('user').createUser(
+            'wt-dm-test-user2', 'password', 'Joey', 'Black', 'jblack@example.com')
+        self.tmpdir = {}
         self.assetstore = list(self.model('assetstore').find({}))[0]
 
         [self.testCollection, self.testFolder, self.files, self.gfiles] = \
@@ -43,7 +49,13 @@ class IntegrationTestCase(base.TestCase):
 
         self.transferredFiles = set()
 
+    def tearDown(self):
+        for prefix in self.tmpdir:
+            shutil.rmtree(self.tmpdir[prefix])
+        base.TestCase.tearDown(self)
+
     def createStructure(self, prefix):
+        self.tmpdir[prefix] = tempfile.mkdtemp()
         collection = \
             self.model('collection').createCollection('%s_wt_dm_test_col' % prefix,
                                                       creator=self.user, public=False,
@@ -51,10 +63,10 @@ class IntegrationTestCase(base.TestCase):
         folder = \
             self.model('folder').createFolder(collection, '%s_wt_dm_test_fldr' % prefix,
                                               parentType='collection')
-        files = [self.createFile('%s_%s' % (prefix, n), 1 * MB, self.tmpdir)
+        files = [self.createFile('%s_%s' % (prefix, n), 1 * MB, self.tmpdir[prefix])
                  for n in range(1, 5)]
         self.model('assetstore').importData(self.assetstore, folder, 'folder',
-                                            {'importPath': self.tmpdir}, {}, self.user,
+                                            {'importPath': self.tmpdir[prefix]}, {}, self.user,
                                             leafFoldersAsItems=False)
         gfiles = [self.model('item').findOne({'name': file}) for file in files]
 
@@ -79,9 +91,6 @@ class IntegrationTestCase(base.TestCase):
             for i in range(size):
                 f.write(b'\0')
         return name
-
-    def tearDown(self):
-        base.TestCase.tearDown(self)
 
     def makeDataSet(self, items, objectids=True):
         if objectids:
@@ -123,7 +132,88 @@ class IntegrationTestCase(base.TestCase):
         sessions = list(self.model('session', 'wt_data_manager').list(self.user))
         self.assertEqual(len(sessions), 1)
         self._testItemWithSession(session, item)
-        self.apiroot.dm.deleteSession(self.user, session=session)
+        resp = self.request(
+            path='/dm/session/{_id}/object'.format(**session),
+            method='GET', user=self.user,
+            params={'path': '/non_existent_path'}
+        )
+        self.assertStatus(resp, 400)
+
+        resp = self.request(
+            path='/dm/session/{_id}/object'.format(**session),
+            method='GET', user=self.user,
+            params={'path': '/filetest__4'}
+        )
+        self.assertStatusOk(resp)
+        self.assertEqual(resp.json['object']['_id'], str(self.gfiles[3]['_id']))
+
+        dataSet.append({
+            'itemId': str(self.testFolder2['_id']),
+            'mountPath': '/' + self.testFolder2['name']
+        })
+        dataSet = [{'itemId': str(_['itemId']), 'mountPath': _['mountPath']}
+                   for _ in dataSet]
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='PUT', user=self.user,
+            params={'dataSet': json.dumps(dataSet)}
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['seq'], 1)
+
+        resp = self.request(
+            path='/dm/session/{_id}/object'.format(**session),
+            method='GET', user=self.user,
+            params={'path': '/' + self.testFolder2['name'], 'children': True}
+        )
+        self.assertStatusOk(resp)
+        children = resp.json['children']
+        leafFile = next((_ for _ in children if _['name'] == self.gfiles2[-1]['name']), None)
+        self.assertEqual(leafFile['_id'], str(self.gfiles2[-1]['_id']))
+
+        resp = self.request(
+            path='/dm/session/{_id}/object'.format(**session),
+            method='GET', user=self.user,
+            params={'path': '/' + self.testFolder2['name'] + '/' + leafFile['name'] + '_blah',
+                    'children': True}
+        )
+        self.assertStatus(resp, 400)
+
+        resp = self.request(
+            path='/dm/session/{_id}/object'.format(**session),
+            method='GET', user=self.user,
+            params={'path': '/' + self.testFolder2['name'] + '/' + leafFile['name'],
+                    'children': True}
+        )
+        self.assertStatusOk(resp)
+
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='DELETE', user=self.user2)
+        self.assertStatus(resp, 403)
+
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='DELETE', user=self.admin)
+        self.assertStatusOk(resp)
+
+        from girder.plugins.wholetale.models.tale import Tale
+        tale = Tale().createTale({'_id': ObjectId()}, dataSet, title='blah',
+                                 creator=self.user)
+
+        resp = self.request(
+            path='/dm/session', method='POST', user=self.user,
+            params={'taleId': str(tale['_id'])}
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['dataSet'], dataSet)
+        Tale().remove(tale)  # TODO: This should fail, since the session is up
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
 
     def _testItem(self, dataSet, item, download=False):
         session = self.model('session', 'wt_data_manager').createSession(self.user, dataSet=dataSet)
@@ -357,3 +447,34 @@ class IntegrationTestCase(base.TestCase):
         })
         # not in the collection
         self.assertStatus(resp, 404)
+
+    def test09TaleUpdateEventHandler(self):
+        dataSet = self.makeDataSet([{'_id': self.testFolder['_id'], 'name': 'fldr'}],
+                                   objectids=False)
+        from girder.plugins.wholetale.models.tale import Tale
+        tale = Tale().createTale({'_id': ObjectId()}, dataSet, title='test09',
+                                 creator=self.user)
+
+        resp = self.request(
+            path='/dm/session', method='POST', user=self.user,
+            params={'taleId': str(tale['_id'])}
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['dataSet'], dataSet)
+
+        tale['dataSet'].pop(0)
+        tale = Tale().save(tale)
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session), method='GET',
+            user=self.user
+        )
+        self.assertStatusOk(resp)
+        session = resp.json
+        self.assertEqual(session['dataSet'], tale['dataSet'])
+
+        Tale().remove(tale)  # TODO: This should fail, since the session is up
+        resp = self.request(
+            path='/dm/session/{_id}'.format(**session),
+            method='DELETE', user=self.user)
+        self.assertStatusOk(resp)

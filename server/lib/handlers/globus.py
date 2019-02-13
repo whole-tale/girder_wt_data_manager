@@ -1,6 +1,6 @@
 from ..tm_utils import TransferHandler
-from ._globus.server import Server
-from ._globus.clients import Clients
+from girder.plugins.globus_handler.server import Server
+from girder.plugins.globus_handler.clients import Clients
 from threading import Lock
 from globus_sdk import TransferData
 from girder.utility.model_importer import ModelImporter
@@ -31,6 +31,9 @@ class Globus(TransferHandler):
         tmpName = str(uuid.uuid4())
         transfer = TransferData(tc, self._getSourceEndpointId(), userEndpointId,
                                 label=str(self.transferId))
+        transfer['notify_on_succeeded'] = False
+        transfer['notify_on_failed'] = False
+        transfer['notify_on_inactive'] = False
         transfer.add_item(self._getSourcePath(), tmpName)
         res = tc.submit_transfer(transfer)
         if res['code'] != 'Accepted':
