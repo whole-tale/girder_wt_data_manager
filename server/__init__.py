@@ -56,8 +56,8 @@ def load(info):
                    file_gc.FractionalCollectionThresholds(settings),
                    file_gc.LRUSortingScheme()))
     cacheManager = cache_manager.SimpleCacheManager(settings, transferManager, fileGC, pathMapper)
-
-    info['apiRoot'].dm = DM(cacheManager)
+    dm = DM(cacheManager)
+    info['apiRoot'].dm = dm
     info['apiRoot'].dm.route('GET', ('session',), session.listSessions)
     info['apiRoot'].dm.route('GET', ('session', ':id',), session.getSession)
     info['apiRoot'].dm.route('POST', ('session',), session.createSession)
@@ -82,6 +82,8 @@ def load(info):
     info['apiRoot'].dm.route('PUT', ('fs', ':id', 'setProperties'), fs.setProperties)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
+
+    info['apiRoot'].dm.route('GET', ('clearCache',), dm.clearCache)
 
     def itemLocked(event):
         dict = event.info
