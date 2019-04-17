@@ -215,6 +215,24 @@ class Lock(AccessControlledModel):
             Lock.FIELD_LOCK_COUNT: 0
         })
 
+    def _getAllCachedItems(self):
+        return self.itemModel.find(query={
+            Lock.FIELD_CACHED: True
+        })
+
+    def _getLocksForItem(self, item):
+        return self.find(query={'itemId': item['_id']})
+
+    def _resetLockedCount(self, item):
+        self.itemModel.update(
+            query={
+                '_id': item['_id']
+            },
+            update={
+                '$set': {Lock.FIELD_LOCK_COUNT: 0}
+            }
+        )
+
     def downloadItem(self, lock):
         item = self.itemModel.findOne({'_id': lock['itemId']})
         if item is None:
