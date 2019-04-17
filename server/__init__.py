@@ -83,7 +83,7 @@ def load(info):
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'listing'), fs.getListing)
     info['apiRoot'].dm.route('GET', ('fs', ':id', 'evict'), lock.evict)
 
-    info['apiRoot'].dm.route('GET', ('clearCache',), dm.clearCache)
+    info['apiRoot'].dm.route('PUT', ('clearCache',), dm.clearCache)
 
     def itemLocked(event):
         dict = event.info

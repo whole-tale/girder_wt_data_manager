@@ -4,7 +4,7 @@
 from girder.api.rest import Resource
 from girder.utility.model_importer import ModelImporter
 from girder.api import access
-from girder.api.describe import Description, describeRoute
+from girder.api.describe import Description, autoDescribeRoute
 
 
 class DM(Resource):
@@ -28,15 +28,15 @@ class DM(Resource):
         return self.cacheManager.fileGC
 
     @access.admin
-    @describeRoute(
+    @autoDescribeRoute(
         Description('Clean the DMS cache. Will not affect items being currently downloaded.')
-            .param('force', 'By default, only items that are not locked are evicted from the '
-                            'cache. That is, items that would otherwise be collectable by the '
-                            'garbage collector. If this parameter is set, evict all items from the '
-                            'cache and forcibly remove all locks associated with them. This is not'
-                            'recommended since the consequences to the consistency of the system'
-                            'are hard to predict.', paramType='path')
-            .errorResponse('Admin access required.', 403)
+        .param('force', 'By default, only items that are not locked are evicted from the '
+               'cache. That is, items that would otherwise be collectable by the '
+               'garbage collector. If this parameter is set, evict all items from the '
+               'cache and forcibly remove all locks associated with them. This is not '
+               'recommended since the consequences to the consistency of the system '
+               'are hard to predict.', default=False, required=False, dataType='boolean')
+        .errorResponse('Admin access required.', 403)
     )
-    def clearCache(self, params):
-        self.cacheManager.clearCache('force' in params)
+    def clearCache(self, force):
+        self.cacheManager.clearCache(force)
