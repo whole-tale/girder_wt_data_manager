@@ -28,10 +28,27 @@ class FileGC():
                 os.remove(path)
                 self.lockModel.fileDeleted(itemId)
                 return True
+            except FileNotFoundError:
+                # well, well, wasn't there to begin with
+                logger.warn('File for %s did not exist' % itemId)
+                self.lockModel.fileDeleted(itemId)
+                return True
             finally:
                 self.lockModel.unlockForDeletion(itemId)
         else:
             return False
+
+    def clearCache(self, force):
+        if force:
+            items = self.lockModel._getAllCachedItems()
+        else:
+            items = self.lockModel.getCollectionCandidates()
+        for item in items:
+            if force:
+                for lock in self.lockModel._getLocksForItem(item):
+                    self.lockModel.releaseLock(None, lock)
+                self.lockModel._resetLockedCount(item)
+            self.collectFile(item)
 
     def unreacheable(self, itemId):
         pass
@@ -41,6 +58,12 @@ class FileGC():
 
     def resume(self):
         pass
+
+    def getCollectionCandidates(self):
+        return list(self.lockModel.getCollectionCandidates())
+
+    def collectFile(self, item):
+        return self.deleteFile(item['_id'])
 
 
 class DummyFileGC(FileGC):
@@ -113,17 +136,11 @@ class PeriodicFileGC(FileGC):
         return self.collectionStrategy.shouldCollect(
             self.psInfo.totalSize(), self.psInfo.sizeUsed())
 
-    def getCollectionCandidates(self):
-        return list(self.lockModel.getCollectionCandidates())
-
     def fileSize(self, item):
         return item['size']
 
     def sortCandidates(self, list):
         list.sort(key=lambda x: self.collectionStrategy.itemSortKey(x))
-
-    def collectFile(self, item):
-        return FileGC.deleteFile(self, item['_id'])
 
     def shouldStopCollecting(self, initialUsed, collected):
         return self.collectionStrategy.shouldStopCollecting(

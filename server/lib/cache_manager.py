@@ -24,6 +24,9 @@ class CacheManager:
     def sessionDeleted(self):
         pass
 
+    def clearCache(self, force):
+        self.fileGC.clearCache(force)
+
 
 class SimpleCacheManager(CacheManager):
     def __init__(self, settings, transferManager, fileGC, pathMapper):
