@@ -15,7 +15,7 @@ from girder import logger
 BEGINNING_OF_TIME = datetime.datetime.fromtimestamp(0)
 
 
-class FileGC():
+class FileGC:
     def __init__(self, settings, pathMapper):
         self.settings = settings
         self.lockModel = Models.lockModel
