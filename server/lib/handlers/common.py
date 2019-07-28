@@ -1,11 +1,10 @@
-from ..tm_utils import TransferHandler, Models
-from ...constants import TransferStatus
+from ..tm_utils import TransferHandler
 import os
 
 
 class UrlTransferHandler(TransferHandler):
-    def __init__(self, url, transferId, itemId, psPath, user):
-        TransferHandler.__init__(self, transferId, itemId, psPath, user)
+    def __init__(self, url, transferId, itemId, psPath, user, transferManager):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
         self.url = url
         self.flen = self._getFileFromItem()['size']
 
@@ -19,8 +18,8 @@ class UrlTransferHandler(TransferHandler):
 class FileLikeUrlTransferHandler(UrlTransferHandler):
     BUFSZ = 32768
 
-    def __init__(self, url, transferId, itemId, psPath, user):
-        UrlTransferHandler.__init__(self, url, transferId, itemId, psPath, user)
+    def __init__(self, url, transferId, itemId, psPath, user, transferManager):
+        UrlTransferHandler.__init__(self, url, transferId, itemId, psPath, user, transferManager)
 
     def transfer(self):
         Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,

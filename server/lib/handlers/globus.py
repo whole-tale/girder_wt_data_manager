@@ -13,8 +13,8 @@ import os
 
 
 class Globus(TransferHandler):
-    def __init__(self, url, transferId, itemId, psPath, user):
-        TransferHandler.__init__(self, transferId, itemId, psPath, user)
+    def __init__(self, url, transferId, itemId, psPath, user, transferManager):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
         self.url = url
         self.server = None
         self.serverLock = Lock()

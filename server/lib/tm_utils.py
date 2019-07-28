@@ -16,11 +16,12 @@ class TransferHandler:
     TRANSFER_UPDATE_MIN_CHUNK_SIZE = 1024 * 1024
     TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE = 0.001
 
-    def __init__(self, transferId, itemId, psPath, user):
+    def __init__(self, transferId, itemId, psPath, user, transferManager):
         self.transferId = transferId
         self.itemId = itemId
         self.psPath = psPath
         self.user = user
+        self.transferManager = transferManager
         self.flen = 0
         self.item = Models.itemModel.load(self.itemId, force=True)
         self.lastTransferred = 0

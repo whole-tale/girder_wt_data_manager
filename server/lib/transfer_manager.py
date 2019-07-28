@@ -141,6 +141,7 @@ class SimpleTransferManager(TransferManager):
                 file['size']
             except KeyError:
                 raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
-            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
+            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user,
+                                                             self)
         else:
-            return GirderDownloadTransferHandler(transferId, itemId, psPath, user)
+            return GirderDownloadTransferHandler(transferId, itemId, psPath, user, self)
