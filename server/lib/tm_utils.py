@@ -1,7 +1,4 @@
 from girder.utility.model_importer import ModelImporter
-from girder import events
-from ..constants import TransferStatus
-import traceback
 
 
 class Models:
@@ -34,26 +31,19 @@ class TransferHandler:
         return Models.fileModel.load(files[0]['_id'], force=True)
 
     def run(self):
-        try:
-            Models.transferModel.setStatus(self.transferId,
-                                           TransferStatus.INITIALIZING)
-            self.transfer()
-            Models.transferModel.setStatus(self.transferId, TransferStatus.DONE, size=self.flen,
-                                           transferred=self.flen, setTransferEndTime=True)
-            self.transferDone()
-        except Exception as ex:
-            self._failTransfer(ex)
+        self.transfer()
 
-    def _failTransfer(self, ex):
-        traceback.print_exc()
-        Models.transferModel.setStatus(self.transferId, TransferStatus.FAILED,
-                                       error=str(ex), setTransferEndTime=True)
+    def getTransferredByteCount(self):
+        return self.flen
+
+    def getItemId(self):
+        return self.itemId
+
+    def getPhysicalPath(self):
+        return self.psPath
 
     def transfer(self):
         pass
-
-    def transferDone(self):
-        events.trigger('dm.fileDownloaded', info={'itemId': self.itemId, 'psPath': self.psPath})
 
     def updateTransferProgress(self, size, transferred):
         # to avoid too many db requests, update only on:
@@ -64,8 +54,7 @@ class TransferHandler:
         if delta >= TransferHandler.TRANSFER_UPDATE_MIN_CHUNK_SIZE and \
                 delta >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE:
 
-            Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING, size=size,
-                                           transferred=transferred)
+            self.transferManager.transferProgress(self.transferId, total=size, current=transferred)
             self.lastTransferred = transferred
 
     def isManaged(self):
@@ -77,3 +66,19 @@ class TransferHandler:
         service.
         """
         return False
+
+class TransferException(Exception):
+    def __init__(self, message=None, cause=None, fatal=True):
+        super().__init__()
+        self.message = message
+        self.cause = cause
+        self.fatal = fatal
+
+    def getMessage(self):
+        return self.message
+
+    def getCause(self):
+        return self.cause
+
+    def isFatal(self):
+        return self.fatal

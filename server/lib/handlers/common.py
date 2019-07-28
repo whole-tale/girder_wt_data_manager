@@ -22,9 +22,7 @@ class FileLikeUrlTransferHandler(UrlTransferHandler):
         UrlTransferHandler.__init__(self, url, transferId, itemId, psPath, user, transferManager)
 
     def transfer(self):
-        Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,
-                                       size=self.flen, transferred=0, setTransferStartTime=True)
-
+        self.transferManager.transferProgress(self.transferId, self.flen, 0)
         self.mkdirs()
         with open(self.psPath, 'wb') as outf, self.openInputStream() as inf:
             self.transferBytes(outf, inf)
