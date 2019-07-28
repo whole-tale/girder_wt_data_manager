@@ -83,7 +83,7 @@ class Transfer(AccessControlledModel):
             update=update
         )
 
-    def list(self, user, sessionId=None, discardOld=True):
+    def list(self, user=None, sessionId=None, discardOld=True):
         if sessionId is None:
             return self.listAllForUser(user, discardOld=discardOld)
         else:

@@ -26,7 +26,7 @@ class Session(AccessControlledModel):
     def validate(self, session):
         return session
 
-    def list(self, user, limit=0, offset=0, sort=None):
+    def list(self, user=None, limit=0, offset=0, sort=None):
         """
         List a page of containers for a given user.
 
@@ -139,7 +139,7 @@ class Session(AccessControlledModel):
         in a filesystem. This means that either this item or one of its ancestors is in
         the dataSet
         :param sessionId: The session in which to check the presence of the item
-        :param itemId: The item to find
+        :param objectId: The item to find
         :param user: The user owning the session
         :return:
         """
