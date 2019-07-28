@@ -66,3 +66,13 @@ class TransferHandler:
             Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING, size=size,
                                            transferred=transferred)
             self.lastTransferred = transferred
+
+    def isManaged(self):
+        """
+        Returns True if this handler uses a managed transfer service. In principle,
+        a managed transfer service takes care of error handling (e.g., retries, backoff, etc.).
+        In the event that the infrastructure also implements error handling, this
+        flag can be used to indicate that error handling should be left to the transfer
+        service.
+        """
+        return False

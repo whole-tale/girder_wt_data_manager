@@ -20,6 +20,9 @@ class Globus(TransferHandler):
         self.serverLock = Lock()
         self.clients = Clients()
 
+    def isManaged(self):
+        return True
+
     def transfer(self):
         # this isn't very scalable and there isn't much wisdom in wasting a thread on a transfer
         # that is directed by another machine, but we waste an entire process or more on the
