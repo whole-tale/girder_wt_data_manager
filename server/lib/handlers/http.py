@@ -1,4 +1,4 @@
-from six.moves.urllib.request import urlopen
+from six.moves.urllib.request import urlopen, Request
 from .common import FileLikeUrlTransferHandler
 
 
@@ -22,4 +22,8 @@ class Http(FileLikeUrlTransferHandler):
         FileLikeUrlTransferHandler.__init__(self, url, transferId, itemId, psPath, user)
 
     def openInputStream(self):
+        if self.item['meta']['provider'] == "DesignSafe" or self.item['meta']['provider'] == "CyVerse":
+            headers = {"Authorization": "Bearer %s" % self.user['agaveAccessToken']}
+            request = Request(self.url, None, headers=headers)
+            return HttpStream(urlopen(request))
         return HttpStream(urlopen(self.url))
