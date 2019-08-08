@@ -128,7 +128,6 @@ class TransferManager:
         itemId = transferHandler.getItemId()
         Models.lockModel.fileDownloadFailed(itemId, message)
 
-
     def transferProgress(self, transferId, total, current):
         Models.transferModel.setStatus(transferId, TransferStatus.TRANSFERRING, size=total,
                                        transferred=current)

@@ -69,9 +69,10 @@ class Globus(TransferHandler):
                 return
             elif status == 'FAILED':
                 if task['fatal_error']:
-                    raise TransferException(message='Globus transfer %s failed: %s' %
-                                    (self.transferId, task['fatal_error']['description']),
-                                            fatal=True)
+                    raise TransferException(
+                        message='Globus transfer %s failed: %s' %
+                        (self.transferId, task['fatal_error']['description']),
+                        fatal=True)
                 else:
                     raise Exception(message='Globus transfer %s failed for unknown reasons' %
                                     self.transferId, fatal=False)

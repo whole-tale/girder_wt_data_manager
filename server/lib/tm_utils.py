@@ -67,6 +67,7 @@ class TransferHandler:
         """
         return False
 
+
 class TransferException(Exception):
     def __init__(self, message=None, cause=None, fatal=True):
         super().__init__()
