@@ -1,4 +1,4 @@
-from ..tm_utils import TransferHandler
+from ..tm_utils import TransferHandler, TransferException
 from girder.plugins.globus_handler.server import Server
 from girder.plugins.globus_handler.clients import Clients
 from threading import Lock
@@ -13,12 +13,15 @@ import os
 
 
 class Globus(TransferHandler):
-    def __init__(self, url, transferId, itemId, psPath, user):
-        TransferHandler.__init__(self, transferId, itemId, psPath, user)
+    def __init__(self, url, transferId, itemId, psPath, user, transferManager):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
         self.url = url
         self.server = None
         self.serverLock = Lock()
         self.clients = Clients()
+
+    def isManaged(self):
+        return True
 
     def transfer(self):
         # this isn't very scalable and there isn't much wisdom in wasting a thread on a transfer
@@ -45,33 +48,37 @@ class Globus(TransferHandler):
             status = task['status']
             if status == 'ACTIVE':
                 # update bytes
-                pass
+                self.transferManager.transferProgress(self.transferId, -1,
+                                                      task['bytes_transferred'])
             elif status == 'INACTIVE':
                 # credential expiration
                 # TODO: deal with this properly or ensure it does not happen
                 msg = 'Credential expired for Globus task %s, transfer %s.' % (taskId,
                                                                                self.transferId)
                 logger.warn(msg)
-                raise Exception(msg)
+                raise TransferException(message=msg, fatal=True)
             elif status == 'SUCCEEDED':
                 dir = os.path.dirname(self.psPath)
                 try:
                     os.makedirs(dir)
                 except OSError:
                     if not os.path.exists(dir):
-                        raise Exception('Could not create transfer destination directory: %s' % dir)
+                        raise TransferException(message='Could not create transfer destination '
+                                                        'directory: %s' % dir, fatal=True)
                 shutil.move('%s/%s' % (self.server.getUserDir(self.user), tmpName), self.psPath)
                 return
             elif status == 'FAILED':
                 if task['fatal_error']:
-                    raise Exception('Globus transfer %s failed: %s' %
-                                    (self.transferId, task['fatal_error']['description']))
+                    raise TransferException(
+                        message='Globus transfer %s failed: %s' %
+                        (self.transferId, task['fatal_error']['description']),
+                        fatal=True)
                 else:
-                    raise Exception('Globus transfer %s failed for unknown reasons' %
-                                    self.transferId)
+                    raise Exception(message='Globus transfer %s failed for unknown reasons' %
+                                    self.transferId, fatal=False)
             else:
-                raise Exception('Unknown globus task status %s for transfer %s' %
-                                (status, self.transferId))
+                raise Exception(messsage='Unknown globus task status %s for transfer %s' %
+                                (status, self.transferId), fatal=False)
             time.sleep(10)
 
     def _getSourceEndpointId(self):

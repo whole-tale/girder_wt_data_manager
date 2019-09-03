@@ -15,13 +15,13 @@ class CacheManager:
     def itemUnlocked(self, itemId):
         pass
 
-    def fileDownloaded(self):
+    def fileDownloaded(self, info):
         pass
 
-    def sessionCreated(self):
+    def sessionCreated(self, info):
         pass
 
-    def sessionDeleted(self):
+    def sessionDeleted(self, info):
         pass
 
     def clearCache(self, force):

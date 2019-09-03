@@ -20,7 +20,10 @@ class Lock(AccessControlledModel):
     FIELD_CACHED = 'dm.cached'
     FIELD_LAST_UNLOCKED = 'dm.lastUnlocked'
     FIELD_DOWNLOAD_COUNT = 'dm.downloadCount'
+    FIELD_ERROR_COUNT = 'dm.errorCount'
     FIELD_PS_PATH = 'dm.psPath'
+    FIELD_TRANSFER_ERROR = 'dm.transferError'
+    FIELD_TRANSFER_ERROR_MESSAGE = 'dm.transferErrorMessage'
 
     DOWNLOAD_BUF_SIZE = 65536
 
@@ -49,8 +52,8 @@ class Lock(AccessControlledModel):
 
         :param user: The user initiating the request.
         :type user: dict or None
-        :param session: A session associated with the request.
-        :type session: Session
+        :param sessionId: The ID of a session associated with the request.
+        :type sessionId: ObjectId
         :param itemId: The (Girder) item being locked
         :type itemId: string or ObjectId
         :param ownerId: The entity requesting the lock. If not specified, the session id is used
@@ -75,7 +78,7 @@ class Lock(AccessControlledModel):
 
         self.waitForPendingDelete(itemId)
 
-        if (self.tryLock(user, sessionId, itemId, ownerId)):
+        if self.tryLock(user, sessionId, itemId, ownerId):
             # we own the transfer
             events.trigger('dm.itemLocked',
                            info={'itemId': itemId, 'user': user, 'sessionId': sessionId})
@@ -143,6 +146,11 @@ class Lock(AccessControlledModel):
                     Lock.FIELD_TRANSFER_IN_PROGRESS: True,
                     'dm.transfer.userId': user['_id'],
                     'dm.transfer.sessionId': sessionId,
+                },
+                # Unset transfer error when starting a new download so that
+                # it is not confused with a current error
+                '$unset': {
+                    Lock.FIELD_TRANSFER_ERROR: True
                 }
             },
             multi=False)
@@ -198,11 +206,33 @@ class Lock(AccessControlledModel):
                 },
                 '$unset': {
                     'dm.transfer.userId': True,
-                    'dm.transfer.sessionId': True
+                    'dm.transfer.sessionId': True,
+                    Lock.FIELD_TRANSFER_ERROR: True,
+                    Lock.FIELD_TRANSFER_ERROR_MESSAGE: True
                 },
                 '$inc': {
                     Lock.FIELD_DOWNLOAD_COUNT: 1
                 }
+            },
+            multi=False)
+
+    def fileDownloadFailed(self, itemId, errorMessage):
+        self.itemModel.update(
+            query={'_id': itemId},
+            update={
+                '$set': {
+                    Lock.FIELD_CACHED: False,
+                    Lock.FIELD_TRANSFER_IN_PROGRESS: False,
+                    Lock.FIELD_TRANSFER_ERROR: True,
+                    Lock.FIELD_TRANSFER_ERROR_MESSAGE: errorMessage
+                },
+                '$unset': {
+                    'dm.transfer.userId': True,
+                    'dm.transfer.sessionId': True
+                },
+                '$inc': {
+                    Lock.FIELD_ERROR_COUNT: 1
+                },
             },
             multi=False)
 

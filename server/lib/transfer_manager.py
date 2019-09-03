@@ -1,33 +1,37 @@
 from ..constants import TransferStatus
 from .handler_factory import HandlerFactory
-from .tm_utils import TransferHandler, Models
+from .tm_utils import TransferHandler, Models, TransferException
 import threading
 import os
 import traceback
 from girder.utility import assetstore_utilities
 from girder.utility.model_importer import ModelImporter
 from girder.models.model_base import ValidationException
-from girder import logger
+from girder import events, logger
 
 
 class TransferThread(threading.Thread):
-    def __init__(self, itemId, transferHandler):
+    def __init__(self, itemId, transferId, transferHandler, transferManager):
         threading.Thread.__init__(self, name='TransferThread[' + str(itemId) + ']')
         self.daemon = True
         self.itemId = itemId
+        self.transferId = transferId
         self.transferHandler = transferHandler
+        self.transferManager = transferManager
 
     def run(self):
         try:
             self.transferHandler.run()
-        except Exception:
+            self.transferManager.transferCompleted(self.transferId, self.transferHandler)
+        except Exception as ex:
             traceback.print_exc()
+            self.transferManager.transferFailed(self.transferId, self.transferHandler, ex)
 
 
 class GirderDownloadTransferHandler(TransferHandler):
 
-    def __init__(self, transferId, itemId, psPath, user):
-        TransferHandler.__init__(self, transferId, itemId, psPath, user)
+    def __init__(self, transferId, itemId, psPath, user, transferManager):
+        TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
 
     def transfer(self):
         file = self._getFileFromItem()
@@ -95,8 +99,38 @@ class TransferManager:
     def startTransfer(self, user, itemId, sessionId):
         pass
 
-    def transferCompleted(self, itemId):
-        pass
+    def _startTransferThread(self, itemId, transferId, transferHandler):
+        transferThread = TransferThread(itemId, transferId, transferHandler, self)
+        transferThread.start()
+
+    def transferCompleted(self, transferId, transferHandler):
+        flen = transferHandler.getTransferredByteCount()
+        Models.transferModel.setStatus(transferId, TransferStatus.DONE, size=flen,
+                                       transferred=flen, setTransferEndTime=True)
+        itemId = transferHandler.getItemId()
+        psPath = transferHandler.getPhysicalPath()
+        events.trigger('dm.fileDownloaded', info={'itemId': itemId, 'psPath': psPath})
+
+    def transferFailed(self, transferId, transferHandler, exception):
+        if isinstance(exception, TransferException):
+            temporaryFailure = not exception.isFatal()
+            message = str(exception.getCause())
+        else:
+            temporaryFailure = False
+            message = str(exception)
+
+        if temporaryFailure:
+            Models.transferModel.setStatus(transferId, TransferStatus.FAILED_TEMPORARILY,
+                                           error=message, setTransferEndTime=False)
+        else:
+            Models.transferModel.setStatus(transferId, TransferStatus.FAILED,
+                                           error=message, setTransferEndTime=True)
+        itemId = transferHandler.getItemId()
+        Models.lockModel.fileDownloadFailed(itemId, message)
+
+    def transferProgress(self, transferId, total, current):
+        Models.transferModel.setStatus(transferId, TransferStatus.TRANSFERRING, size=total,
+                                       transferred=current)
 
 
 class SimpleTransferManager(TransferManager):
@@ -110,9 +144,9 @@ class SimpleTransferManager(TransferManager):
         self.actualStartTransfer(user, transfer['_id'], itemId)
 
     def actualStartTransfer(self, user, transferId, itemId):
+        Models.transferModel.setStatus(transferId, TransferStatus.INITIALIZING)
         transferHandler = self.getTransferHandler(transferId, itemId, user)
-        transferThread = TransferThread(itemId, transferHandler)
-        transferThread.start()
+        self._startTransferThread(itemId, transferId, transferHandler)
 
     def getTransferHandler(self, transferId, itemId, user):
         item = Models.itemModel.load(itemId, force=True)
@@ -141,6 +175,7 @@ class SimpleTransferManager(TransferManager):
                 file['size']
             except KeyError:
                 raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
-            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user)
+            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user,
+                                                             self)
         else:
-            return GirderDownloadTransferHandler(transferId, itemId, psPath, user)
+            return GirderDownloadTransferHandler(transferId, itemId, psPath, user, self)
