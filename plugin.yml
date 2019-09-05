@@ -1,6 +1,6 @@
 name: WholeTale Data Manager
 description: Implements Data Management features for the WholeTale project
-version: 0.8.0
+version: 0.8.0rc1
 dependencies:
     - oauth
     - globus_handler
