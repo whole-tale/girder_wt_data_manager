@@ -16,3 +16,4 @@ class TransferStatus:
     TRANSFERRING = 2
     DONE = 3
     FAILED = 4
+    FAILED_TEMPORARILY = 5
