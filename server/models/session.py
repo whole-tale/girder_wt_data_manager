@@ -146,6 +146,8 @@ class Session(AccessControlledModel):
         if isinstance(objectId, str):
             objectId = objectid.ObjectId(objectId)
         session = self.load(sessionId, level=AccessType.READ, user=user)
+        if session is None:
+            raise KeyError(sessionId)
         idSet = set()
         for entry in session['dataSet']:
             idSet.add(objectid.ObjectId(entry['itemId']))
