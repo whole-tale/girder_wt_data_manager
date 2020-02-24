@@ -1,11 +1,15 @@
+import pathlib
+
 import bson
 from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, TokenScope
 from girder.api import access
 from girder.api.describe import Description, describeRoute
+from girder.plugins.virtual_resources.rest import VirtualObject
 from girder.utility import assetstore_utilities
 from girder.models.model_base import ValidationException
 
+VO = VirtualObject()
 
 class FS(Resource):
 
@@ -52,8 +56,34 @@ class FS(Resource):
         if type == 'item':
             return self.listItem(obj, params, user)
         if type == 'folder':
-            return self.listFolder(obj, params, user)
+            if 'isMapping' in obj:
+                path = pathlib.Path(obj['fsPath'])
+                return self._getVListing(path, obj, user)
+            elif id.startswith('wtlocal:'):
+                path, root = VirtualObject.path_from_id(id)
+                rootObj = self.model('folder').load(root, force=True)
+                return self._getVListing(path, rootObj, user)
+            else:
+                return self.listFolder(obj, params, user)
         raise RestException('ID was invalid', code=400)
+
+    def _getVListing(self, path, root, user):
+        return {'folders': self._listVFolders(path, root, user),
+                'files': self._listVFiles(path, root, user)}
+
+    def _listVFolders(self, path, root, user):
+        return [
+            self.model('folder').filter(VO.vFolder(obj, root), user=user)
+            for obj in path.iterdir()
+            if obj.is_dir()
+        ]
+
+    def _listVFiles(self, path, root, user):
+        return [
+            self.model('item').filter(VO.vItem(obj, root), user=user)
+            for obj in path.iterdir()
+            if obj.is_file()
+        ]
 
     def listFolder(self, folder, params, user):
         folders = list(
@@ -123,8 +153,16 @@ class FS(Resource):
         self.model(type).update(query={'_id': id}, update={'$set': props})
 
     def _discoverObject(self, id, user, access=AccessType.READ):
-        for model in ['file', 'item', 'folder']:
-            obj = self.model(model).load(id, level=access, user=user)
-            if obj is not None:
-                return obj, model
-        raise RestException('ID was invalid.', code=400)
+        if id.startswith('wtlocal:'):
+            path, root = VirtualObject.path_from_id(id)
+            rootObj = self.model('folder').load(root, force=True)
+            if path.is_dir():
+                return VO.vFolder(path, rootObj), 'folder'
+            else:
+                return VO.vItem(path, rootObj), 'item'
+        else:
+            for model in ['file', 'item', 'folder']:
+                obj = self.model(model).load(id, level=access, user=user)
+                if obj is not None:
+                    return obj, model
+            raise RestException('ID was invalid.', code=400)
