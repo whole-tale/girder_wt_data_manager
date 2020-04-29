@@ -68,22 +68,19 @@ class FS(Resource):
         raise RestException('ID was invalid', code=400)
 
     def _getVListing(self, path, root, user):
-        return {'folders': self._listVFolders(path, root, user),
-                'files': self._listVFiles(path, root, user)}
-
-    def _listVFolders(self, path, root, user):
-        return [
-            self.model('folder').filter(VO.vFolder(obj, root), user=user)
-            for obj in path.iterdir()
-            if obj.is_dir()
-        ]
-
-    def _listVFiles(self, path, root, user):
-        return [
-            self.model('item').filter(VO.vItem(obj, root), user=user)
-            for obj in path.iterdir()
-            if obj.is_file()
-        ]
+        folders = []
+        files = []
+        links = []
+        for obj in path.iterdir():
+            if obj.is_dir():
+                folders.append(self.model('folder').filter(VO.vFolder(obj, root), user=user))
+            elif obj.is_file():
+                files.append(self.model('item').filter(VO.vItem(obj, root), user=user))
+            elif obj.is_symlink():
+                # pretend it's a file at this point
+                links.append(self.model('item').filter(VO.vLink(obj, root), user=user,
+                                                       additionalKeys=['linkTarget']))
+        return {'folders': folders, 'files': files, 'links': links}
 
     def listFolder(self, folder, params, user):
         folders = list(
