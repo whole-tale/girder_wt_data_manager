@@ -1,5 +1,10 @@
 ## Data Management Plugin for Girder/WholeTale
 
+[![GitHub Project](https://img.shields.io/badge/GitHub--blue?style=social&logo=GitHub)](https://github.com/whole-tale/girder_wt_data_manager)
+[![Build Status](https://circleci.com/gh/whole-tale/girder_wt_data_manager.png?style=shield)](https://circleci.com/gh/whole-tale/girder_wt_data_manager)
+[![Coverage](https://img.shields.io/codecov/c/github/whole-tale/girder_wt_data_manager.svg)](https://codecov.io/gh/whole-tale/girder_wt_data_manager)
+[![NSF-1541450](https://img.shields.io/badge/NSF-1541450-blue.svg)](https://nsf.gov/awardsearch/showAward?AWD_ID=1541450)
+
 ### Intro
 
 For details about terminology (e.g., PS, DM, etc.), see https://docs.google.com/document/d/1AWK80HqiSUdK_fKF30ysilHWl5krzPTVmK8g_3pdFeI/edit#heading=h.e5nw0hx7dnhc
@@ -573,3 +578,7 @@ FAILED = 4
 A started transfer will have its ``startTime`` set to a UTC timestamp
 representing the moment when the transfer was initiated. Similarly,
 a finished transfer will have ``endTime`` set.
+
+### Acknowledgements
+
+This material is based upon work supported by the National Science Foundation under Grant No. OAC-1541450
