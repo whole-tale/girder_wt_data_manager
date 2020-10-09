@@ -9,7 +9,9 @@ from girder.plugins.virtual_resources.rest import VirtualObject
 from girder.utility import assetstore_utilities
 from girder.models.model_base import ValidationException
 
+
 VO = VirtualObject()
+
 
 class FS(Resource):
 
