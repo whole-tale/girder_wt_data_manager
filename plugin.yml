@@ -5,3 +5,4 @@ dependencies:
     - oauth
     - globus_handler
     - wholetale
+    - virtual_resources
