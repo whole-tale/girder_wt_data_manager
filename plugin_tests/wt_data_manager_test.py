@@ -94,9 +94,15 @@ class IntegrationTestCase(base.TestCase):
 
     def makeDataSet(self, items, objectids=True):
         if objectids:
-            return [{'itemId': f['_id'], 'mountPath': '/' + f['name']} for f in items]
+            return [
+                {'itemId': f['_id'], 'mountPath': '/' + f['name'], '_modelType': 'item'}
+                for f in items
+            ]
         else:
-            return [{'itemId': str(f['_id']), 'mountPath': '/' + f['name']} for f in items]
+            return [
+                {'itemId': str(f['_id']), 'mountPath': '/' + f['name'], '_modelType': 'item'}
+                for f in items
+            ]
 
     def test01LocalFile(self):
         dataSet = self.makeDataSet(self.gfiles)
@@ -149,10 +155,13 @@ class IntegrationTestCase(base.TestCase):
 
         dataSet.append({
             'itemId': str(self.testFolder2['_id']),
-            'mountPath': '/' + self.testFolder2['name']
+            'mountPath': '/' + self.testFolder2['name'],
+            '_modelType': 'folder',
         })
-        dataSet = [{'itemId': str(_['itemId']), 'mountPath': _['mountPath']}
-                   for _ in dataSet]
+        dataSet = [
+            {'itemId': str(_['itemId']), 'mountPath': _['mountPath'], '_modelType': _['_modelType']}
+            for _ in dataSet
+        ]
         resp = self.request(
             path='/dm/session/{_id}'.format(**session),
             method='PUT', user=self.user,
@@ -451,6 +460,7 @@ class IntegrationTestCase(base.TestCase):
     def test09TaleUpdateEventHandler(self):
         dataSet = self.makeDataSet([{'_id': self.testFolder['_id'], 'name': 'fldr'}],
                                    objectids=False)
+        dataSet[0]["_modelType"] = "folder"
         from girder.plugins.wholetale.models.tale import Tale
         tale = Tale().createTale({'_id': ObjectId()}, dataSet, title='test09',
                                  creator=self.user)
