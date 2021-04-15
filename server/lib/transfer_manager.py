@@ -23,7 +23,7 @@ class TransferThread(threading.Thread):
         try:
             self.transferHandler.run()
             self.transferManager.transferCompleted(self.transferId, self.transferHandler)
-        except Exception as ex:
+        except Exception as ex:  # noqa
             traceback.print_exc()
             self.transferManager.transferFailed(self.transferId, self.transferHandler, ex)
 
@@ -89,7 +89,7 @@ class TransferManager:
             try:
                 user = self.getUser(item['ownerId'])
                 self.startTransfer(user, item['itemId'], item['sessionId'])
-            except Exception as ex:
+            except Exception as ex:  # noqa
                 logger.warning('Failed to strart transfer for itemId %s. Reason: %s'
                                % (item['itemId'], str(ex)))
 

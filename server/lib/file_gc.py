@@ -83,7 +83,7 @@ class CollectorThread(Thread):
             try:
                 logger.info('Running DM file GC')
                 self.collect()
-            except Exception:
+            except Exception:  # noqa
                 logger.error('File collection failure', exc_info=1)
             time.sleep(self.settings.get(constants.PluginSettings.GC_RUN_INTERVAL))
 
