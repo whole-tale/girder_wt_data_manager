@@ -1,12 +1,28 @@
 from ..tm_utils import TransferHandler
 import os
 
+from girder.plugins.wholetale.lib import Verificators
+
 
 class UrlTransferHandler(TransferHandler):
+    _headers = None
+
     def __init__(self, url, transferId, itemId, psPath, user, transferManager):
         TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
         self.url = url
         self.flen = self._getFileFromItem()['size']
+
+        try:
+            verificator = Verificators[self.item["meta"]["provider"].lower()]
+            self._headers = verificator(user=user, url=url).headers
+        except KeyError:
+            pass
+
+    @property
+    def headers(self):
+        if self._headers:
+            return self._headers
+        return {}
 
     def mkdirs(self):
         try:

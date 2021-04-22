@@ -8,4 +8,4 @@ class Http(FileLikeUrlTransferHandler):
                                             transferManager)
 
     def openInputStream(self):
-        return requests.get(self.url, stream=True).raw
+        return requests.get(self.url, stream=True, headers=self.headers).raw
