@@ -1,20 +1,5 @@
-from six.moves.urllib.request import urlopen
+import requests
 from .common import FileLikeUrlTransferHandler
-
-
-class HttpStream:
-    def __init__(self, stream):
-        self.stream = stream
-
-    def __enter__(self):
-        return self
-
-    def read(self, sz=-1):
-        return self.stream.read(sz)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # dear python, do these need to be closed if not all data is read?
-        return True
 
 
 class Http(FileLikeUrlTransferHandler):
@@ -23,4 +8,4 @@ class Http(FileLikeUrlTransferHandler):
                                             transferManager)
 
     def openInputStream(self):
-        return HttpStream(urlopen(self.url))
+        return requests.get(self.url, stream=True).raw
