@@ -33,7 +33,10 @@ class Http(FileLikeUrlTransferHandler):
             fp = httpio.open(urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path,
                                                       '', '', '')), headers=self.extra_headers)
             zf = zipfile.ZipFile(fp)
-            return zipfile.Path(zf, path).open()
+            try:
+                return zipfile.Path(zf, path).open(mode="rb")
+            except ValueError:
+                return zipfile.Path(zf, path).open()
         else:
             resp = requests.get(self.url, stream=True, headers=self.headers)
             resp.raise_for_status()  # Throw an exception in case transfer failed
