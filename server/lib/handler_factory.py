@@ -1,3 +1,5 @@
+import urllib
+
 from .handlers.local import Local
 from .handlers.http import Http
 from .handlers.globus import Globus
@@ -19,13 +21,12 @@ class HandlerFactory:
     def getURLTransferHandler(self, url, transferId, itemId, psPath, user, transferManager):
         if url is None or url == '':
             raise ValueError()
-        ix = url.find('://')
-        if ix == -1:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme == '':
             return self.newTransferHandler('local', url, transferId, itemId, psPath, user,
                                            transferManager)
         else:
-            proto = url[0:ix]
-            return self.newTransferHandler(proto, url, transferId, itemId, psPath, user,
+            return self.newTransferHandler(parsed.scheme, url, transferId, itemId, psPath, user,
                                            transferManager)
 
     def newTransferHandler(self, name, url, transferId, itemId, psPath, user, transferManager):
