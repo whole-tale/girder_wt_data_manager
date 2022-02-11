@@ -8,4 +8,6 @@ class Http(FileLikeUrlTransferHandler):
                                             transferManager)
 
     def openInputStream(self):
-        return requests.get(self.url, stream=True).raw
+        resp = requests.get(self.url, stream=True, headers=self.headers)
+        resp.raise_for_status()  # Throw an exception in case transfer failed
+        return resp.raw
