@@ -1,8 +1,10 @@
+import functools
 import urllib
 import zipfile
 
 import httpio
 import requests
+
 from .common import FileLikeUrlTransferHandler
 
 
@@ -21,5 +23,7 @@ class Http(FileLikeUrlTransferHandler):
                 return zipfile.Path(zf, path).open()
         else:
             resp = requests.get(self.url, stream=True, headers=self.headers)
+            if resp.headers.get("Content-Encoding") in ("gzip",):
+                resp.raw.read = functools.partial(resp.raw.read, decode_content=True)
             resp.raise_for_status()  # Throw an exception in case transfer failed
             return resp.raw
