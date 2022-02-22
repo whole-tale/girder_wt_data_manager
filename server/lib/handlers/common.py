@@ -1,7 +1,10 @@
-from ..tm_utils import TransferHandler
+import hashlib
 import os
 
 from girder.plugins.wholetale.lib import Verificators
+from girder.models.item import Item
+
+from ..tm_utils import TransferHandler, TransferException
 
 
 class UrlTransferHandler(TransferHandler):
@@ -30,6 +33,25 @@ class UrlTransferHandler(TransferHandler):
         except OSError:
             pass
 
+    def verify_checksum(self):
+        item = Item().load(self.itemId, user=self.user)
+        if (checksums := item.get("meta", {}).get("checksum")):
+            alg, value = list(checksums.items())[0]  # Get just one
+            h = hashlib.new(alg.lower())
+
+            with open(self.psPath, "rb") as fp:
+                while True:
+                    data = fp.read(2**22)  # 4MB chunks
+                    if not data:
+                        break
+                    h.update(data)
+            if h.hexdigest() != value:
+                os.remove(self.psPath)
+                raise TransferException(
+                    message=f"Checksum verification failed for item:{self.itemId}",
+                    fatal=True
+                )
+
 
 class FileLikeUrlTransferHandler(UrlTransferHandler):
     BUFSZ = 32768
@@ -42,6 +64,7 @@ class FileLikeUrlTransferHandler(UrlTransferHandler):
         self.mkdirs()
         with open(self.psPath, 'wb') as outf, self.openInputStream() as inf:
             self.transferBytes(outf, inf)
+        self.verify_checksum()
 
     def openInputStream(self):
         raise NotImplementedError()
