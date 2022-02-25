@@ -70,7 +70,7 @@ class TransferHandler:
 
 class TransferException(Exception):
     def __init__(self, message=None, cause=None, fatal=True):
-        super().__init__()
+        super().__init__(message)
         self.message = message
         self.cause = cause
         self.fatal = fatal
