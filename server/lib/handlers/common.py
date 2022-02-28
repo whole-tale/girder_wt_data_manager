@@ -1,8 +1,9 @@
 import hashlib
 import os
 
-from girder.plugins.wholetale.lib import Verificators
+from girder.constants import AccessType
 from girder.models.item import Item
+from girder.plugins.wholetale.lib import Verificators
 
 from ..tm_utils import TransferHandler, TransferException
 
@@ -34,7 +35,7 @@ class UrlTransferHandler(TransferHandler):
             pass
 
     def verify_checksum(self):
-        item = Item().load(self.itemId, user=self.user)
+        item = Item().load(self.itemId, user=self.user, level=AccessType.READ)
         if (checksums := item.get("meta", {}).get("checksum")):
             alg, value = list(checksums.items())[0]  # Get just one
             h = hashlib.new(alg.lower())
