@@ -64,8 +64,9 @@ class Session(Resource):
             'A data set is a list of objects of the form '
             '{"itemId": string, "mountPath": string}.', paramType='query', schema=dataSetSchema,
             required=False)
-        .modelParam('taleId', "An optional id of a Tale. If provided, Tale's involatileData will "
-                    "be used to initialize the session instead of the dataSet parameter.",
+        .modelParam("taleId", "An optional id of a Tale. If provided, a Tale will be tied to this "
+                    "session and any update on the Tale's dataSet "
+                    "will be reflected in the session.",
                     model='tale', plugin='wholetale', level=AccessType.READ, paramType='query',
                     required=False)
     )
