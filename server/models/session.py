@@ -52,8 +52,8 @@ class Session(AccessControlledModel):
         :param dataSet: The initial dataSet associated with this session. The dataSet is a list
          of dictionaries with two keys: 'itemId', and 'mountPath'
         :type dataSet: list
-        :param tale: If a tale is provided, use dataSet associated with it to initialize
-         a session.
+        :param tale: If a tale is provided, tie the session to the tale. This is used to
+         automatically refresh the dataSet when the tale is updated.
         :type tale: dict or None
         """
 
@@ -64,11 +64,9 @@ class Session(AccessControlledModel):
         }
 
         if tale:
-            session['dataSet'] = tale['dataSet']
             session['taleId'] = tale['_id']
-        else:
-            session['dataSet'] = dataSet
 
+        session["dataSet"] = dataSet or tale.get("dataSet", [])
         session = self.setUserAccess(session, user=user, level=AccessType.ADMIN, save=True)
         # TODO: is the custom event really necessary? save in here ^^ already triggers
         #  'model.session.save', with info=session
