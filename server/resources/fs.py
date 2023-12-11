@@ -9,6 +9,7 @@ from girder.plugins.virtual_resources.rest import VirtualObject
 from girder.utility import assetstore_utilities
 from girder.models.model_base import ValidationException
 
+from ..lib.utils import getLatestFile
 
 VO = VirtualObject()
 
@@ -91,7 +92,7 @@ class FS(Resource):
 
         files = []
         for item in self.model('folder').childItems(folder=folder):
-            childFiles = list(self.model('item').childFiles(item))
+            childFiles = [getLatestFile(item)]
             nChildren = len(childFiles)
             if nChildren == 1 or (FS.ONE_ITEM_ONE_FILE and nChildren > 1):
                 fileitem = childFiles[0]
@@ -116,7 +117,7 @@ class FS(Resource):
 
     def listItem(self, item, params, user):
         files = []
-        for fileitem in self.model('item').childFiles(item):
+        for fileitem in [getLatestFile(item)]:
             if 'imported' not in fileitem and \
                     fileitem.get('assetstoreId') is not None:
                 try:

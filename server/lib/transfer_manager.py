@@ -1,18 +1,21 @@
-from ..constants import TransferStatus
-from .handler_factory import HandlerFactory
-from .tm_utils import TransferHandler, Models, TransferException
-import threading
 import os
+import threading
 import traceback
+
+from girder import events, logger
+from girder.models.model_base import ValidationException
 from girder.utility import assetstore_utilities
 from girder.utility.model_importer import ModelImporter
-from girder.models.model_base import ValidationException
-from girder import events, logger
+
+from ..constants import TransferStatus
+from .handler_factory import HandlerFactory
+from .tm_utils import Models, TransferException, TransferHandler
+from .utils import getLatestFile
 
 
 class TransferThread(threading.Thread):
     def __init__(self, itemId, transferId, transferHandler, transferManager):
-        threading.Thread.__init__(self, name='TransferThread[' + str(itemId) + ']')
+        threading.Thread.__init__(self, name="TransferThread[" + str(itemId) + "]")
         self.daemon = True
         self.itemId = itemId
         self.transferId = transferId
@@ -22,21 +25,31 @@ class TransferThread(threading.Thread):
     def run(self):
         try:
             self.transferHandler.run()
-            self.transferManager.transferCompleted(self.transferId, self.transferHandler)
+            self.transferManager.transferCompleted(
+                self.transferId, self.transferHandler
+            )
         except Exception as ex:  # noqa
             traceback.print_exc()
-            self.transferManager.transferFailed(self.transferId, self.transferHandler, ex)
+            self.transferManager.transferFailed(
+                self.transferId, self.transferHandler, ex
+            )
 
 
 class GirderDownloadTransferHandler(TransferHandler):
-
     def __init__(self, transferId, itemId, psPath, user, transferManager):
-        TransferHandler.__init__(self, transferId, itemId, psPath, user, transferManager)
+        TransferHandler.__init__(
+            self, transferId, itemId, psPath, user, transferManager
+        )
 
     def transfer(self):
         file = self._getFileFromItem()
-        Models.transferModel.setStatus(self.transferId, TransferStatus.TRANSFERRING,
-                                       size=self.flen, transferred=0, setTransferStartTime=True)
+        Models.transferModel.setStatus(
+            self.transferId,
+            TransferStatus.TRANSFERRING,
+            size=self.flen,
+            transferred=0,
+            setTransferStartTime=True,
+        )
         stream = Models.fileModel.download(file, headers=False)
 
         try:
@@ -47,7 +60,7 @@ class GirderDownloadTransferHandler(TransferHandler):
             # function that ensures that the directory exists without failing if
             # it does. Good job, python!
             pass
-        with open(self.psPath, 'wb') as outf:
+        with open(self.psPath, "wb") as outf:
             self.transferBytes(outf, stream)
 
     def transferBytes(self, outf, stream):
@@ -74,24 +87,28 @@ class TransferManager:
         data = []
 
         for item in activeTransfersFromItem:
-            ids.add(item['_id'])
-            data.append({
-                'itemId': item['_id'],
-                'ownerId': item['dm']['transfer']['userId'],
-                'sessionId': item['dm']['transfer']['sessionId']
-            })
+            ids.add(item["_id"])
+            data.append(
+                {
+                    "itemId": item["_id"],
+                    "ownerId": item["dm"]["transfer"]["userId"],
+                    "sessionId": item["dm"]["transfer"]["sessionId"],
+                }
+            )
         for transfer in activeTransfers:
-            if not transfer['itemId'] in ids:
+            if transfer["itemId"] not in ids:
                 data.append(transfer)
 
         for item in data:
-            print('Restarting transfer for item ' + str(item))
+            print("Restarting transfer for item " + str(item))
             try:
-                user = self.getUser(item['ownerId'])
-                self.startTransfer(user, item['itemId'], item['sessionId'])
+                user = self.getUser(item["ownerId"])
+                self.startTransfer(user, item["itemId"], item["sessionId"])
             except Exception as ex:  # noqa
-                logger.warning('Failed to strart transfer for itemId %s. Reason: %s'
-                               % (item['itemId'], str(ex)))
+                logger.warning(
+                    "Failed to strart transfer for itemId %s. Reason: %s"
+                    % (item["itemId"], str(ex))
+                )
 
     def getUser(self, userId):
         return Models.userModel.load(userId, force=True)
@@ -105,11 +122,16 @@ class TransferManager:
 
     def transferCompleted(self, transferId, transferHandler):
         flen = transferHandler.getTransferredByteCount()
-        Models.transferModel.setStatus(transferId, TransferStatus.DONE, size=flen,
-                                       transferred=flen, setTransferEndTime=True)
+        Models.transferModel.setStatus(
+            transferId,
+            TransferStatus.DONE,
+            size=flen,
+            transferred=flen,
+            setTransferEndTime=True,
+        )
         itemId = transferHandler.getItemId()
         psPath = transferHandler.getPhysicalPath()
-        events.trigger('dm.fileDownloaded', info={'itemId': itemId, 'psPath': psPath})
+        events.trigger("dm.fileDownloaded", info={"itemId": itemId, "psPath": psPath})
 
     def transferFailed(self, transferId, transferHandler, exception):
         if isinstance(exception, TransferException):
@@ -120,17 +142,26 @@ class TransferManager:
             message = str(exception)
 
         if temporaryFailure:
-            Models.transferModel.setStatus(transferId, TransferStatus.FAILED_TEMPORARILY,
-                                           error=message, setTransferEndTime=False)
+            Models.transferModel.setStatus(
+                transferId,
+                TransferStatus.FAILED_TEMPORARILY,
+                error=message,
+                setTransferEndTime=False,
+            )
         else:
-            Models.transferModel.setStatus(transferId, TransferStatus.FAILED,
-                                           error=message, setTransferEndTime=True)
+            Models.transferModel.setStatus(
+                transferId,
+                TransferStatus.FAILED,
+                error=message,
+                setTransferEndTime=True,
+            )
         itemId = transferHandler.getItemId()
         Models.lockModel.fileDownloadFailed(itemId, message)
 
     def transferProgress(self, transferId, total, current):
-        Models.transferModel.setStatus(transferId, TransferStatus.TRANSFERRING, size=total,
-                                       transferred=current)
+        Models.transferModel.setStatus(
+            transferId, TransferStatus.TRANSFERRING, size=total, transferred=current
+        )
 
 
 class SimpleTransferManager(TransferManager):
@@ -141,7 +172,7 @@ class SimpleTransferManager(TransferManager):
     def startTransfer(self, user, itemId, sessionId):
         # add transfer to transfer DB and initiate actual transfer
         transfer = Models.transferModel.createTransfer(user, itemId, sessionId)
-        self.actualStartTransfer(user, transfer['_id'], itemId)
+        self.actualStartTransfer(user, transfer["_id"], itemId)
 
     def actualStartTransfer(self, user, transferId, itemId):
         Models.transferModel.setStatus(transferId, TransferStatus.INITIALIZING)
@@ -151,31 +182,29 @@ class SimpleTransferManager(TransferManager):
     def getTransferHandler(self, transferId, itemId, user):
         item = Models.itemModel.load(itemId, force=True)
         psPath = self.pathMapper.getPSPath(itemId)
-        files = list(Models.itemModel.childFiles(item=item))
-        if len(files) != 1:
-            raise Exception(
-                'Wrong number of files for item ' + str(item['_id']) + ': ' + str(len(files)))
-        file = Models.fileModel.load(files[0]['_id'], force=True)
+        file = getLatestFile(item)
 
         url = None
-        if 'linkUrl' in file:
-            url = file['linkUrl']
-        elif 'imported' in file:
-            url = file['path']
-        elif 'assetstoreId' in file:
+        if "linkUrl" in file:
+            url = file["linkUrl"]
+        elif "imported" in file:
+            url = file["path"]
+        elif "assetstoreId" in file:
             try:
-                store = \
-                    ModelImporter.model('assetstore').load(file['assetstoreId'])
+                store = ModelImporter.model("assetstore").load(file["assetstoreId"])
                 adapter = assetstore_utilities.getAssetstoreAdapter(store)
                 url = adapter.fullPath(file)
             except (AttributeError, ValidationException):
                 pass
         if url:
             try:
-                file['size']
+                file["size"]
             except KeyError:
-                raise ValueError('File {} must have a size attribute.'.format(str(file['_id'])))
-            return self.handlerFactory.getURLTransferHandler(url, transferId, itemId, psPath, user,
-                                                             self)
+                raise ValueError(
+                    "File {} must have a size attribute.".format(str(file["_id"]))
+                )
+            return self.handlerFactory.getURLTransferHandler(
+                url, transferId, itemId, psPath, user, self
+            )
         else:
             return GirderDownloadTransferHandler(transferId, itemId, psPath, user, self)
