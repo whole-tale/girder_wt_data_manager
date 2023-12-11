@@ -1,12 +1,14 @@
 from girder.utility.model_importer import ModelImporter
 
+from .utils import getLatestFile
+
 
 class Models:
-    itemModel = ModelImporter.model('item')
-    fileModel = ModelImporter.model('file')
-    userModel = ModelImporter.model('user')
-    transferModel = ModelImporter.model('transfer', 'wt_data_manager')
-    lockModel = ModelImporter.model('lock', 'wt_data_manager')
+    itemModel = ModelImporter.model("item")
+    fileModel = ModelImporter.model("file")
+    userModel = ModelImporter.model("user")
+    transferModel = ModelImporter.model("transfer", "wt_data_manager")
+    lockModel = ModelImporter.model("lock", "wt_data_manager")
 
 
 class TransferHandler:
@@ -24,11 +26,7 @@ class TransferHandler:
         self.lastTransferred = 0
 
     def _getFileFromItem(self):
-        files = list(Models.itemModel.childFiles(item=self.item))
-        if len(files) != 1:
-            raise Exception(
-                'Wrong number of files for item ' + str(self.item['_id']) + ': ' + str(len(files)))
-        return Models.fileModel.load(files[0]['_id'], force=True)
+        return getLatestFile(self.item)
 
     def run(self):
         self.transfer()
@@ -51,10 +49,14 @@ class TransferHandler:
         # - TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE transferred
         #   (less would not be visible on a progress bar shorted than 1000px)
         delta = transferred - self.lastTransferred
-        if delta >= TransferHandler.TRANSFER_UPDATE_MIN_CHUNK_SIZE and \
-                delta >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE:
-
-            self.transferManager.transferProgress(self.transferId, total=size, current=transferred)
+        if (
+            delta >= TransferHandler.TRANSFER_UPDATE_MIN_CHUNK_SIZE
+            and delta
+            >= size * TransferHandler.TRANSFER_UPDATE_MIN_FRACTIONAL_CHUNK_SIZE
+        ):
+            self.transferManager.transferProgress(
+                self.transferId, total=size, current=transferred
+            )
             self.lastTransferred = transferred
 
     def isManaged(self):
