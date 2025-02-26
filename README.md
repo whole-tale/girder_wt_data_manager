@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> This repository is deprecated and no longer maintained. This plugin was incorporated into
+> [girder-wholetale](https://github.com/whole-tale/girder-wholetale).
+
 ## Data Management Plugin for Girder/WholeTale
 
 [![GitHub Project](https://img.shields.io/badge/GitHub--blue?style=social&logo=GitHub)](https://github.com/whole-tale/girder_wt_data_manager)
